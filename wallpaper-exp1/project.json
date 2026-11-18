@@ -1,0 +1,212 @@
+{
+	"title" : "GANWALK — Exp I (Visualizer)",
+	"description" : "A Exp I do site do GANWALK como wallpaper: icosaedro, grade e ondas reagindo ao som que o computador está tocando. Arraste o icosaedro para girá-lo.",
+	"file" : "index.html",
+	"preview" : "preview.jpg",
+	"type" : "web",
+	"tags" : [ "Abstract", "Music" ],
+	"general" :
+	{
+		"supportsaudioprocessing" : true,
+		"properties" :
+		{
+			"schemecolor" :
+			{
+				"order" : 0,
+				"text" : "ui_browse_properties_scheme_color",
+				"type" : "color",
+				"value" : "0.92549 0.87843 0.77647"
+			},
+			"bgcolor" :
+			{
+				"order" : 1,
+				"text" : "Cor de fundo",
+				"type" : "color",
+				"value" : "0.07059 0.04706 0.02745"
+			},
+			"fgcolor" :
+			{
+				"order" : 2,
+				"text" : "Cor de foco",
+				"type" : "color",
+				"value" : "0.92549 0.87843 0.77647"
+			},
+			"sensitivity" :
+			{
+				"order" : 10,
+				"text" : "Sensibilidade ao som",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 3,
+				"value" : 1,
+				"fraction" : true,
+				"precision" : 2,
+				"editable" : true
+			},
+			"autogain" :
+			{
+				"order" : 11,
+				"text" : "Ganho automático (reage igual em volume baixo)",
+				"type" : "bool",
+				"value" : true
+			},
+			"reverse" :
+			{
+				"order" : 12,
+				"text" : "Girar ao contrário",
+				"type" : "bool",
+				"value" : false
+			},
+			"idlemotion" :
+			{
+				"order" : 13,
+				"text" : "Movimento no silêncio",
+				"type" : "bool",
+				"value" : true
+			},
+			"delay" :
+			{
+				"order" : 20,
+				"text" : "Eco Profundo",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 1,
+				"value" : 0,
+				"fraction" : true,
+				"precision" : 2
+			},
+			"reverb" :
+			{
+				"order" : 21,
+				"text" : "Câmara Etérea (Rastro)",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 1,
+				"value" : 0,
+				"fraction" : true,
+				"precision" : 2
+			},
+			"chorus" :
+			{
+				"order" : 22,
+				"text" : "Oscilador de Realidades",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 1,
+				"value" : 0,
+				"fraction" : true,
+				"precision" : 2
+			},
+			"filter" :
+			{
+				"order" : 23,
+				"text" : "Véu Sonoro",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 100,
+				"value" : 0
+			},
+			"overdrive" :
+			{
+				"order" : 24,
+				"text" : "Distorção Cósmica",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 1,
+				"value" : 0,
+				"fraction" : true,
+				"precision" : 2
+			},
+			"bloom" :
+			{
+				"order" : 25,
+				"text" : "Brilho extra (bloom)",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 2,
+				"value" : 0,
+				"fraction" : true,
+				"precision" : 2
+			},
+			"showshape" :
+			{
+				"order" : 30,
+				"text" : "Mostrar icosaedro",
+				"type" : "bool",
+				"value" : true
+			},
+			"showgrid" :
+			{
+				"order" : 31,
+				"text" : "Mostrar grade",
+				"type" : "bool",
+				"value" : true
+			},
+			"showwaves" :
+			{
+				"order" : 32,
+				"text" : "Mostrar ondas",
+				"type" : "bool",
+				"value" : true
+			},
+			"showtext" :
+			{
+				"order" : 40,
+				"text" : "Mostrar texto",
+				"type" : "bool",
+				"value" : true
+			},
+			"customtext" :
+			{
+				"order" : 41,
+				"text" : "Texto",
+				"type" : "textinput",
+				"value" : "GANWALK",
+				"condition" : "showtext.value == true"
+			},
+			"textsize" :
+			{
+				"order" : 42,
+				"text" : "Tamanho do texto",
+				"type" : "slider",
+				"min" : 2,
+				"max" : 25,
+				"value" : 10,
+				"condition" : "showtext.value == true"
+			},
+			"textopacity" :
+			{
+				"order" : 43,
+				"text" : "Opacidade do texto",
+				"type" : "slider",
+				"min" : 0,
+				"max" : 1,
+				"value" : 1,
+				"fraction" : true,
+				"precision" : 2,
+				"condition" : "showtext.value == true"
+			},
+			"textglow" :
+			{
+				"order" : 44,
+				"text" : "Brilho neon no texto",
+				"type" : "bool",
+				"value" : true,
+				"condition" : "showtext.value == true"
+			},
+			"quality" :
+			{
+				"order" : 50,
+				"text" : "Resolução de render",
+				"type" : "combo",
+				"value" : "1",
+				"options" :
+				[
+					{ "label" : "Nativa (100%)", "value" : "1" },
+					{ "label" : "Equilibrada (75%)", "value" : "0.75" },
+					{ "label" : "Leve (50%)", "value" : "0.5" }
+				]
+			}
+		}
+	}
+}

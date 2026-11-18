@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GANWALK — Exp I</title>
+
+<!-- Tudo local: o wallpaper funciona sem internet -->
+<script src="lib/three.min.js"></script>
+<script src="lib/CopyShader.js"></script>
+<script src="lib/LuminosityHighPassShader.js"></script>
+<script src="lib/EffectComposer.js"></script>
+<script src="lib/ShaderPass.js"></script>
+<script src="lib/RenderPass.js"></script>
+<script src="lib/UnrealBloomPass.js"></script>
+
+<style>
+    @font-face {
+        font-family: 'Astloch';
+        font-weight: 700;
+        font-display: block;
+        src: url('fonts/Astloch-Bold.woff2') format('woff2');
+    }
+
+    :root {
+        --bg-color: #120c07;
+        --highlight-color: #ece0c6;
+        --highlight-rgb: 236, 224, 198;
+        --text-opacity: 1;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        overflow: hidden; background-color: var(--bg-color);
+        user-select: none;
+    }
+
+    #container {
+        position: relative; width: 100%; height: 100%;
+        display: flex; justify-content: center; align-items: center;
+    }
+
+    canvas#canvas {
+        display: block; position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%; z-index: 0;
+    }
+
+    #main-text {
+        font-family: 'Astloch', serif; font-weight: 700; font-size: 10vw;
+        color: var(--highlight-color); position: relative; z-index: 1;
+        pointer-events: none; text-align: center; line-height: 1;
+        white-space: pre;
+        opacity: var(--text-opacity);
+        text-shadow: 0 0 10px rgba(var(--highlight-rgb), 0.8), 0 0 20px rgba(var(--highlight-rgb), 0.6);
+        transition: opacity 0.5s ease, color 0.5s ease;
+        will-change: transform;
+    }
+    #main-text.no-glow { text-shadow: none; }
+    #main-text.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="container">
+    <div id="main-text">GANWALK</div>
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+/*
+ * GANWALK — Exp I como wallpaper do Wallpaper Engine.
+ *
+ * A cena é a mesma do App1 do site (icosaedro em wireframe, grade e três
+ * linhas de onda + bloom). A diferença é a fonte do som: em vez de tocar
+ * calma.mp3 por um AnalyserNode, o wallpaper ouve o que o computador está
+ * reproduzindo através de window.wallpaperRegisterAudioListener, que o
+ * Wallpaper Engine chama ~30x por segundo com 128 valores
+ * (64 bandas do canal esquerdo + 64 do direito, do grave ao agudo).
+ *
+ * Os "efeitos" do painel do site (Eco Profundo, Câmara Etérea, etc.) não
+ * mexem mais no áudio — o som é do sistema —, mas continuam dirigindo a
+ * parte visual exatamente como antes, e viraram propriedades do wallpaper.
+ */
+const Wallpaper = {
+    scene: null, camera: null, renderer: null, composer: null, bloomPass: null,
+    fadeScene: null, fadeCamera: null, fadeMesh: null,
+    visualGroup: null, centralShape: null, gridLines: [], waveLines: [], waveLinesGroup: null,
+    raycaster: new THREE.Raycaster(), mouse: new THREE.Vector2(),
+    isDragging: false, prevMouse: { x: 0, y: 0 }, dragBurst: 0,
+
+    bgThree: new THREE.Color(0x120c07), fgThree: new THREE.Color(0xece0c6),
+
+    // Equivalentes visuais dos controles da Exp I (0..1, o "véu" é 0..100)
+    fx: { delay: 0, reverb: 0, chorus: 0, overdrive: 0, filter: 0 },
+    settings: {
+        sensitivity: 1, autoGain: true, reverse: false,
+        showGrid: true, showWaves: true, showShape: true,
+        showText: true, textGlow: true, idleMotion: true,
+        quality: 1, fps: 0,
+    },
+
+    // Estado de áudio
+    rawBands: { b: 0, m: 0, h: 0 },
+    bands: { b: 0, m: 0, h: 0 },
+    peaks: { b: 0.15, m: 0.08, h: 0.04 },
+    lastAudioAt: 0,
+    hasWallpaperAudio: false,
+
+    paused: false, animationId: null, lastFrame: 0, startedAt: performance.now(),
+
+    init() {
+        this.initThree();
+        this.setupInteraction();
+        this.setupAudio();
+        this.onResize();
+        this.animate();
+    },
+
+    // ---------- ÁUDIO DO SISTEMA ----------
+    setupAudio() {
+        if (typeof window.wallpaperRegisterAudioListener === 'function') {
+            this.hasWallpaperAudio = true;
+            window.wallpaperRegisterAudioListener(arr => this.onAudio(arr));
+        }
+        // Fora do Wallpaper Engine (ex.: abrir no navegador para testar)
+        // não há áudio do sistema: um sinal sintético mantém a cena viva.
+        this.demoMode = !this.hasWallpaperAudio || /[?&]demo\b/.test(location.search);
+    },
+
+    onAudio(arr) {
+        if (!arr || arr.length < 128) return;
+        // Mistura L+R em 64 bandas e divide como no site:
+        // ~10% grave, ~30% médio, ~60% agudo.
+        let b = 0, m = 0, h = 0;
+        for (let i = 0; i < 64; i++) {
+            const v = Math.min(1.5, (arr[i] + arr[i + 64]) * 0.5);
+            if (i < 7) b += v; else if (i < 26) m += v; else h += v;
+        }
+        this.rawBands.b = b / 7;
+        this.rawBands.m = m / 19;
+        this.rawBands.h = h / 38;
+        this.lastAudioAt = performance.now();
+    },
+
+    demoBands(t) {
+        const beat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 2 * 1.0)), 8);
+        this.rawBands.b = 0.12 + beat * 0.5;
+        this.rawBands.m = 0.08 + 0.05 * Math.sin(t * 1.3) + beat * 0.08;
+        this.rawBands.h = 0.03 + 0.02 * Math.sin(t * 3.1) + Math.random() * 0.02;
+    },
+
+    // O AnalyserNode do site devolvia valores em dB (já comprimidos).
+    // O Wallpaper Engine entrega amplitude linear, então normalizamos pelo pico
+    // recente e aplicamos uma raiz para chegar a uma resposta parecida.
+    processBands() {
+        const s = this.settings;
+        const scale = { b: 0.85, m: 0.6, h: 0.45 };   // faixa típica do site
+        const floor = { b: 0.06, m: 0.03, h: 0.015 }; // abaixo disso é silêncio
+        const silent = this.hasWallpaperAudio && !this.demoMode && performance.now() - this.lastAudioAt > 1000;
+
+        for (const k of ['b', 'm', 'h']) {
+            let v = silent ? 0 : this.rawBands[k];
+            let n;
+            if (s.autoGain) {
+                this.peaks[k] = Math.max(v, this.peaks[k] * 0.997, floor[k]);
+                n = Math.sqrt(Math.min(1.2, v / this.peaks[k]));
+                // Some com o volume: abaixo do piso a cena descansa.
+                n *= Math.min(1, v / floor[k]);
+            } else {
+                n = Math.sqrt(Math.min(1.2, v * 3));
+            }
+            const target = Math.min(1.5, n * scale[k] * s.sensitivity);
+            // Ataque rápido, soltura suave (o WE atualiza a ~30 Hz, a tela a 60+).
+            const a = target > this.bands[k] ? 0.5 : 0.12;
+            this.bands[k] += (target - this.bands[k]) * a;
+        }
+    },
+
+    // ---------- CENA (igual ao App1.initThree) ----------
+    initThree() {
+        const cvs = document.getElementById('canvas');
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.z = 50;
+
+        this.renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: true, alpha: true, preserveDrawingBuffer: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio * this.settings.quality);
+        this.renderer.autoClear = false;
+
+        const rp = new THREE.RenderPass(this.scene, this.camera);
+        this.bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0, 0.4, 0);
+        this.composer = new THREE.EffectComposer(this.renderer);
+        this.composer.addPass(rp);
+        this.composer.addPass(this.bloomPass);
+
+        this.fadeScene = new THREE.Scene();
+        this.fadeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.fadeMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: this.bgThree, transparent: true, opacity: 1.0 }));
+        this.fadeScene.add(this.fadeMesh);
+
+        this.visualGroup = new THREE.Group(); this.visualGroup.position.y = 12; this.scene.add(this.visualGroup);
+        this.centralShape = new THREE.Mesh(new THREE.IcosahedronGeometry(8, 0), new THREE.MeshBasicMaterial({ color: this.fgThree, wireframe: true, transparent: true, opacity: 1 }));
+        this.visualGroup.add(this.centralShape);
+
+        const gridGroup = new THREE.Group(); gridGroup.position.y = 12; this.scene.add(gridGroup);
+        const lm = new THREE.LineBasicMaterial({ color: this.fgThree, transparent: true, opacity: 0.6 });
+        for (let i = 0; i <= 30; i++) {
+            let pts = []; for (let j = 0; j <= 30; j++) pts.push(new THREE.Vector3(j - 15, i - 15, 0));
+            let g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
+            let l = new THREE.Line(g, lm.clone()); gridGroup.add(l); this.gridLines.push(l);
+            pts = []; for (let j = 0; j <= 30; j++) pts.push(new THREE.Vector3(i - 15, j - 15, 0));
+            g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
+            l = new THREE.Line(g, lm.clone()); gridGroup.add(l); this.gridLines.push(l);
+        }
+
+        // No site, com o menu recolhido, as ondas sobem para y=-12 e esticam 4x.
+        this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -12; this.waveLinesGroup.scale.y = 4; this.scene.add(this.waveLinesGroup);
+        for (let k = -1; k <= 1; k++) {
+            const pts = []; for (let j = 0; j <= 100; j++) pts.push(new THREE.Vector3((j / 100 - 0.5) * 70, k, 0));
+            const g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
+            const l = new THREE.Line(g, lm.clone()); this.waveLinesGroup.add(l); this.waveLines.push(l);
+        }
+
+        window.addEventListener('resize', () => this.onResize());
+    },
+
+    // ---------- INTERAÇÃO ----------
+    // Arrastar o icosaedro gira a forma (o Wallpaper Engine repassa o mouse
+    // quando "Permitir interação com o mouse" está ligado).
+    setupInteraction() {
+        window.addEventListener('mousedown', e => this.onDown(e));
+        window.addEventListener('mouseup', () => this.onUp());
+        window.addEventListener('mousemove', e => this.onMove(e));
+    },
+    onDown(e) {
+        this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        if (this.centralShape.visible && this.raycaster.intersectObject(this.centralShape).length > 0) {
+            this.isDragging = true;
+            this.prevMouse = { x: e.clientX, y: e.clientY };
+        }
+    },
+    onUp() { this.isDragging = false; },
+    onMove(e) {
+        if (!this.isDragging) return;
+        const dx = e.clientX - this.prevMouse.x;
+        const dy = e.clientY - this.prevMouse.y;
+        this.centralShape.rotation.y += dx * 0.005;
+        this.centralShape.rotation.x += dy * 0.005;
+        // No site, arrastar na horizontal "arranhava" a música e inflava a forma.
+        this.dragBurst = Math.max(this.dragBurst, Math.min(1, Math.abs(dx) * 0.05));
+        this.prevMouse = { x: e.clientX, y: e.clientY };
+    },
+
+    // ---------- LOOP (igual ao App1.animate, com t do relógio) ----------
+    animate(now) {
+        this.animationId = requestAnimationFrame(n => this.animate(n));
+        if (this.paused) return;
+        if (this.settings.fps > 0 && now) {
+            const minDelta = 1000 / this.settings.fps;
+            if (now - this.lastFrame < minDelta - 1) return;
+            this.lastFrame = now;
+        }
+
+        const t = (performance.now() - this.startedAt) / 1000;
+        const dir = this.settings.reverse ? -1 : 1;
+
+        if (this.demoMode) this.demoBands(t);
+        this.processBands();
+        const { b, m, h } = this.bands;
+        const avg = (b + m + h) / 3;
+        const idle = this.settings.idleMotion ? 1 : 0;
+
+        const dVal = this.fx.delay, rVal = this.fx.reverb, odVal = this.fx.overdrive, cVal = this.fx.chorus;
+
+        document.getElementById('main-text').style.transform = `scale(${1 + avg * 0.05 * dir})`;
+        this.fadeMesh.material.opacity = 0.02 + 0.98 * Math.pow(1.0 - rVal, 3);
+        this.renderer.setClearColor(this.bgThree, 1 - (dVal * 0.9));
+        this.visualGroup.rotation.y += (0.005 * idle + avg * 0.01) * dir;
+
+        this.dragBurst *= 0.9;
+        this.visualGroup.scale.setScalar(1 + dVal * 0.1 + Math.sin(t * 2) * dVal * 0.1 + this.dragBurst * 0.5);
+
+        if (!this.isDragging) {
+            this.centralShape.rotation.x += (0.005 * idle + h * 0.02) * dir;
+            this.centralShape.rotation.y += (0.005 * idle + m * 0.02) * dir;
+        }
+        this.centralShape.rotation.z += cVal * 0.05 * dir;
+        this.centralShape.scale.set(1 + b * 0.5 + odVal * 0.5, 1 + b * 0.5 - odVal * 0.5, 1 + b * 0.5 + odVal * 0.5);
+
+        if (this.settings.showGrid) {
+            this.gridLines.forEach(l => {
+                const pos = l.geometry.attributes.position.array;
+                const init = l.geometry.attributes.initialPosition.array;
+                for (let i = 0; i < pos.length; i += 3) {
+                    const x = init[i], y = init[i + 1];
+                    const w = Math.sin(x * 0.5 + t * 2 * dir) * b * 5 + Math.cos(y * 0.5 + t * 3 * dir) * m * 3 + Math.sin(Math.sqrt(x * x + y * y) * 0.5 - t * 5) * dVal * 5;
+                    const jit = (Math.random() - 0.5) * h * 0.8 * (rVal * 8) * dir;
+                    pos[i] = x + jit; pos[i + 1] = y + jit; pos[i + 2] = w;
+                }
+                l.geometry.attributes.position.needsUpdate = true;
+            });
+        }
+
+        if (this.settings.showWaves) {
+            this.waveLines.forEach((l, idx) => {
+                const pos = l.geometry.attributes.position.array;
+                const band = idx === 0 ? b : (idx === 1 ? m : h);
+                for (let i = 0; i < pos.length; i += 3) pos[i + 2] = Math.sin(pos[i] * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * (idx === 0 ? 45 : (idx === 1 ? 20 : 15));
+                l.geometry.attributes.position.needsUpdate = true;
+                l.material.opacity = Math.min(1, 0.5 + band * 0.5);
+            });
+        }
+
+        this.renderer.render(this.fadeScene, this.fadeCamera);
+        this.renderer.clearDepth();
+        this.composer.render();
+    },
+
+    onResize() {
+        if (!this.camera) return;
+        this.camera.aspect = window.innerWidth / window.innerHeight; this.camera.updateProjectionMatrix();
+        this.renderer.setPixelRatio(window.devicePixelRatio * this.settings.quality);
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.composer.setPixelRatio && this.composer.setPixelRatio(window.devicePixelRatio * this.settings.quality);
+        this.composer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('main-text').style.fontSize = (this.textSize * (window.innerWidth / 100)) + 'px';
+    },
+    textSize: 10,
+
+    // ---------- CORES / VISIBILIDADE ----------
+    setBgColor(c) {
+        this.bgThree.copy(c);
+        const hex = '#' + c.getHexString();
+        document.documentElement.style.setProperty('--bg-color', hex);
+        this.fadeMesh.material.color.copy(c);
+    },
+    setFgColor(c) {
+        this.fgThree.copy(c);
+        const hex = '#' + c.getHexString();
+        document.documentElement.style.setProperty('--highlight-color', hex);
+        document.documentElement.style.setProperty('--highlight-rgb', `${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}`);
+        this.centralShape.material.color.copy(c);
+        this.gridLines.forEach(l => l.material.color.copy(c));
+        this.waveLines.forEach(l => l.material.color.copy(c));
+    },
+    applyVisibility() {
+        const s = this.settings;
+        this.centralShape.visible = s.showShape;
+        // "Véu Sonoro" no site apagava a grade junto com o filtro passa-baixa.
+        const gridOpacity = ((100 - this.fx.filter) / 100) * 0.6;
+        this.gridLines.forEach(l => { l.visible = s.showGrid; l.material.opacity = gridOpacity; });
+        this.waveLines.forEach(l => { l.visible = s.showWaves; });
+        const txt = document.getElementById('main-text');
+        txt.classList.toggle('hidden', !s.showText);
+        txt.classList.toggle('no-glow', !s.textGlow);
+    },
+};
+
+// ---------- PROPRIEDADES DO WALLPAPER ENGINE ----------
+function weColor(value) {
+    const [r, g, b] = value.split(' ').map(Number);
+    return new THREE.Color(r, g, b); // o WE manda floats 0..1 no espaço sRGB, como THREE r128 espera
+}
+
+window.wallpaperPropertyListener = {
+    applyUserProperties(p) {
+        const W = Wallpaper, s = W.settings;
+        if (p.bgcolor) W.setBgColor(weColor(p.bgcolor.value));
+        if (p.fgcolor) W.setFgColor(weColor(p.fgcolor.value));
+
+        if (p.sensitivity) s.sensitivity = p.sensitivity.value;
+        if (p.autogain) s.autoGain = p.autogain.value;
+        if (p.reverse) s.reverse = p.reverse.value;
+        if (p.idlemotion) s.idleMotion = p.idlemotion.value;
+
+        if (p.delay) W.fx.delay = p.delay.value;
+        if (p.reverb) { W.fx.reverb = p.reverb.value; W.bloomPass.strength = W.fx.reverb * 2.0 + W.bloomBase; }
+        if (p.bloom) { W.bloomBase = p.bloom.value; W.bloomPass.strength = W.fx.reverb * 2.0 + W.bloomBase; }
+        if (p.chorus) W.fx.chorus = p.chorus.value;
+        if (p.overdrive) W.fx.overdrive = p.overdrive.value;
+        if (p.filter) W.fx.filter = p.filter.value;
+
+        if (p.showshape) s.showShape = p.showshape.value;
+        if (p.showgrid) s.showGrid = p.showgrid.value;
+        if (p.showwaves) s.showWaves = p.showwaves.value;
+        if (p.showtext) s.showText = p.showtext.value;
+        if (p.textglow) s.textGlow = p.textglow.value;
+        if (p.customtext) document.getElementById('main-text').textContent = p.customtext.value || 'GANWALK';
+        if (p.textsize) { W.textSize = p.textsize.value; W.onResize(); }
+        if (p.textopacity) document.documentElement.style.setProperty('--text-opacity', p.textopacity.value);
+
+        if (p.quality) { s.quality = parseFloat(p.quality.value); W.onResize(); }
+
+        W.applyVisibility();
+    },
+    applyGeneralProperties(p) {
+        if (p.fps !== undefined) Wallpaper.settings.fps = p.fps;
+    },
+    setPaused(isPaused) {
+        Wallpaper.paused = isPaused;
+    },
+};
+Wallpaper.bloomBase = 0;
+
+Wallpaper.init();
+Wallpaper.applyVisibility();
+</script>
+</body>
+</html>
