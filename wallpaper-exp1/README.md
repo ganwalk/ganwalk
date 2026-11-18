@@ -2,7 +2,7 @@
 
 A Exp I (Visualizer) do [site do GANWALK](https://ganwalk.github.io/2026/) transformada
 num wallpaper web para o Wallpaper Engine. A cena é a mesma do `App1`: icosaedro em
-wireframe, grade, três linhas de onda e bloom. A diferença é de onde vem o som: em vez
+wireframe, grade, três linhas de onda e bloom, agora com relógio e data em pt-BR no topo. A diferença é de onde vem o som: em vez
 de tocar `calma.mp3`, o wallpaper reage **a qualquer som que o computador estiver
 reproduzindo** (Spotify, YouTube, jogos…).
 
@@ -17,7 +17,7 @@ reproduzindo** (Spotify, YouTube, jogos…).
    ser a saída que você está ouvindo). Para arrastar o icosaedro, a interação com o mouse
    precisa estar ligada nas configurações.
 
-Tudo roda localmente (Three.js r128 e a fonte Astloch estão em `lib/` e `fonts/`), então
+Tudo roda localmente (Three.js r128 e as fontes Astloch e Inter estão em `lib/` e `fonts/`), então
 não precisa de internet.
 
 ## Como o som chega
@@ -37,7 +37,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Propriedade | O que faz |
 | :--- | :--- |
 | Cor de fundo / Cor de foco | As mesmas cores da Exp I (padrão `#120c07` / `#ece0c6`). |
-| Mostrar relógio | Hora grande no topo, com a data embaixo ("Quarta-feira, 18 de novembro"), na fonte pixel Silkscreen do site. O brilho respira com o grave. |
+| Mostrar relógio | Hora grande no topo, com a data embaixo ("Quarta-feira, 18 de novembro"), em Inter fina (a mesma família do texto do site). O brilho respira com o grave. |
 | Formato 24 horas / Mostrar segundos / Mostrar data | Ajustes do relógio. Com o formato 24h desligado aparece AM/PM. |
 | Tamanho, distância do topo, opacidade e brilho do relógio | Posicionamento e aparência do relógio. |
 | Descer a cena | Quanto a grade, o icosaedro, as ondas e o texto descem para abrir espaço ao relógio. Com o relógio desligado, a cena volta à posição original. |
@@ -67,5 +67,5 @@ wallpaper-exp1/
 ├── project.json   # manifesto do Wallpaper Engine (tipo web, áudio ligado, propriedades)
 ├── preview.jpg    # miniatura mostrada no Wallpaper Engine / Workshop
 ├── lib/           # Three.js r128 + EffectComposer/UnrealBloomPass
-└── fonts/         # Astloch Bold e Silkscreen (SIL OFL, ver fonts/OFL-*.txt)
+└── fonts/         # Astloch Bold e Inter (SIL OFL, ver fonts/OFL-*.txt)
 ```

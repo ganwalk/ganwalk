@@ -62,35 +62,35 @@
 
     /* --- RELÓGIO E DATA --- */
     @font-face {
-        font-family: 'Silkscreen';
-        font-weight: 400;
+        font-family: 'Inter';
+        font-weight: 100 900;
         font-display: block;
-        src: url('fonts/Silkscreen-Regular.woff2') format('woff2');
+        src: url('fonts/Inter-Variable.woff2') format('woff2');
     }
     :root { --clock-size: 5; --clock-top: 7; --clock-opacity: 1; --pulse: 0; }
     #clock {
         position: absolute; left: 0; right: 0; top: calc(var(--clock-top) * 1vh);
         z-index: 1; pointer-events: none; text-align: center;
-        font-family: 'Silkscreen', monospace; color: var(--highlight-color);
+        font-family: 'Inter', 'Segoe UI', sans-serif; color: var(--highlight-color);
         opacity: var(--clock-opacity);
         /* O brilho respira com o grave */
         text-shadow:
-            0 0 calc(6px + var(--pulse) * 10px) rgba(var(--highlight-rgb), 0.85),
-            0 0 calc(14px + var(--pulse) * 20px) rgba(var(--highlight-rgb), 0.45);
+            0 0 calc(4px + var(--pulse) * 8px) rgba(var(--highlight-rgb), 0.6),
+            0 0 calc(12px + var(--pulse) * 16px) rgba(var(--highlight-rgb), 0.3);
         transition: color 0.5s ease;
     }
     #clock.no-glow { text-shadow: none; }
     #clock.hidden { display: none; }
     #clock-time {
-        font-size: calc(var(--clock-size) * 1vw); line-height: 1;
-        letter-spacing: 0.08em; padding-left: 0.08em; /* compensa o espaçamento no centro */
+        font-size: calc(var(--clock-size) * 1.15vw); line-height: 1;
+        font-weight: 200; letter-spacing: 0.02em;
         font-variant-numeric: tabular-nums; white-space: nowrap;
     }
-    #clock-ampm { font-size: 0.28em; letter-spacing: 0.05em; vertical-align: top; margin-left: 0.15em; }
+    #clock-ampm { font-size: 0.25em; font-weight: 400; letter-spacing: 0.05em; vertical-align: top; margin-left: 0.3em; }
     #clock-seconds { font-size: 0.45em; opacity: 0.75; margin-left: 0.1em; }
     #clock-date {
-        font-size: calc(var(--clock-size) * 0.24vw); margin-top: 0.7em;
-        letter-spacing: 0.12em; white-space: nowrap;
+        font-size: calc(var(--clock-size) * 0.22vw); margin-top: 0.9em;
+        font-weight: 400; letter-spacing: 0.06em; white-space: nowrap; opacity: 0.85;
     }
     #clock-date.hidden { display: none; }
 </style>
