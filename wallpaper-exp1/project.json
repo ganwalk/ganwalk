@@ -1,210 +1,271 @@
 {
-	"title" : "GANWALK — Exp I (Visualizer)",
-	"description" : "A Exp I do site do GANWALK como wallpaper: icosaedro, grade e ondas reagindo ao som que o computador está tocando. Arraste o icosaedro para girá-lo.",
-	"file" : "index.html",
-	"preview" : "preview.jpg",
-	"type" : "web",
-	"tags" : [ "Abstract", "Music" ],
-	"general" :
-	{
-		"supportsaudioprocessing" : true,
-		"properties" :
-		{
-			"schemecolor" :
-			{
-				"order" : 0,
-				"text" : "ui_browse_properties_scheme_color",
-				"type" : "color",
-				"value" : "0.92549 0.87843 0.77647"
+	"title": "GANWALK — Exp I (Visualizer)",
+	"description": "A Exp I do site do GANWALK como wallpaper: icosaedro, grade e ondas reagindo ao som que o computador está tocando. Arraste o icosaedro para girá-lo.",
+	"file": "index.html",
+	"preview": "preview.jpg",
+	"type": "web",
+	"tags": [
+		"Abstract",
+		"Music"
+	],
+	"general": {
+		"supportsaudioprocessing": true,
+		"properties": {
+			"schemecolor": {
+				"order": 0,
+				"text": "ui_browse_properties_scheme_color",
+				"type": "color",
+				"value": "0.92549 0.87843 0.77647"
 			},
-			"bgcolor" :
-			{
-				"order" : 1,
-				"text" : "Cor de fundo",
-				"type" : "color",
-				"value" : "0.07059 0.04706 0.02745"
+			"bgcolor": {
+				"order": 1,
+				"text": "Cor de fundo",
+				"type": "color",
+				"value": "0.07059 0.04706 0.02745"
 			},
-			"fgcolor" :
-			{
-				"order" : 2,
-				"text" : "Cor de foco",
-				"type" : "color",
-				"value" : "0.92549 0.87843 0.77647"
+			"fgcolor": {
+				"order": 2,
+				"text": "Cor de foco",
+				"type": "color",
+				"value": "0.92549 0.87843 0.77647"
 			},
-			"sensitivity" :
-			{
-				"order" : 10,
-				"text" : "Sensibilidade ao som",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 3,
-				"value" : 1,
-				"fraction" : true,
-				"precision" : 2,
-				"editable" : true
+			"showclock": {
+				"order": 3,
+				"text": "Mostrar relógio",
+				"type": "bool",
+				"value": true
 			},
-			"autogain" :
-			{
-				"order" : 11,
-				"text" : "Ganho automático (reage igual em volume baixo)",
-				"type" : "bool",
-				"value" : true
+			"hour24": {
+				"order": 4,
+				"text": "Formato 24 horas",
+				"type": "bool",
+				"value": true,
+				"condition": "showclock.value == true"
 			},
-			"reverse" :
-			{
-				"order" : 12,
-				"text" : "Girar ao contrário",
-				"type" : "bool",
-				"value" : false
+			"showseconds": {
+				"order": 5,
+				"text": "Mostrar segundos",
+				"type": "bool",
+				"value": false,
+				"condition": "showclock.value == true"
 			},
-			"idlemotion" :
-			{
-				"order" : 13,
-				"text" : "Movimento no silêncio",
-				"type" : "bool",
-				"value" : true
+			"showdate": {
+				"order": 6,
+				"text": "Mostrar data",
+				"type": "bool",
+				"value": true,
+				"condition": "showclock.value == true"
 			},
-			"delay" :
-			{
-				"order" : 20,
-				"text" : "Eco Profundo",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 1,
-				"value" : 0,
-				"fraction" : true,
-				"precision" : 2
+			"clocksize": {
+				"order": 7,
+				"text": "Tamanho do relógio",
+				"type": "slider",
+				"min": 2,
+				"max": 12,
+				"value": 5,
+				"fraction": true,
+				"precision": 1,
+				"condition": "showclock.value == true"
 			},
-			"reverb" :
-			{
-				"order" : 21,
-				"text" : "Câmara Etérea (Rastro)",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 1,
-				"value" : 0,
-				"fraction" : true,
-				"precision" : 2
+			"clocktop": {
+				"order": 8,
+				"text": "Distância do topo (%)",
+				"type": "slider",
+				"min": 0,
+				"max": 40,
+				"value": 7,
+				"condition": "showclock.value == true"
 			},
-			"chorus" :
-			{
-				"order" : 22,
-				"text" : "Oscilador de Realidades",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 1,
-				"value" : 0,
-				"fraction" : true,
-				"precision" : 2
+			"clockopacity": {
+				"order": 9,
+				"text": "Opacidade do relógio",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 1,
+				"fraction": true,
+				"precision": 2,
+				"condition": "showclock.value == true"
 			},
-			"filter" :
-			{
-				"order" : 23,
-				"text" : "Véu Sonoro",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 100,
-				"value" : 0
+			"clockglow": {
+				"order": 10,
+				"text": "Brilho neon no relógio",
+				"type": "bool",
+				"value": true,
+				"condition": "showclock.value == true"
 			},
-			"overdrive" :
-			{
-				"order" : 24,
-				"text" : "Distorção Cósmica",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 1,
-				"value" : 0,
-				"fraction" : true,
-				"precision" : 2
+			"sceneoffset": {
+				"order": 11,
+				"text": "Descer a cena (abre espaço ao relógio)",
+				"type": "slider",
+				"min": 0,
+				"max": 25,
+				"value": 8,
+				"condition": "showclock.value == true"
 			},
-			"bloom" :
-			{
-				"order" : 25,
-				"text" : "Brilho extra (bloom)",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 2,
-				"value" : 0,
-				"fraction" : true,
-				"precision" : 2
+			"sensitivity": {
+				"order": 12,
+				"text": "Sensibilidade ao som",
+				"type": "slider",
+				"min": 0,
+				"max": 3,
+				"value": 1,
+				"fraction": true,
+				"precision": 2,
+				"editable": true
 			},
-			"showshape" :
-			{
-				"order" : 30,
-				"text" : "Mostrar icosaedro",
-				"type" : "bool",
-				"value" : true
+			"autogain": {
+				"order": 13,
+				"text": "Ganho automático (reage igual em volume baixo)",
+				"type": "bool",
+				"value": true
 			},
-			"showgrid" :
-			{
-				"order" : 31,
-				"text" : "Mostrar grade",
-				"type" : "bool",
-				"value" : true
+			"reverse": {
+				"order": 14,
+				"text": "Girar ao contrário",
+				"type": "bool",
+				"value": false
 			},
-			"showwaves" :
-			{
-				"order" : 32,
-				"text" : "Mostrar ondas",
-				"type" : "bool",
-				"value" : true
+			"idlemotion": {
+				"order": 15,
+				"text": "Movimento no silêncio",
+				"type": "bool",
+				"value": true
 			},
-			"showtext" :
-			{
-				"order" : 40,
-				"text" : "Mostrar texto",
-				"type" : "bool",
-				"value" : true
+			"delay": {
+				"order": 16,
+				"text": "Eco Profundo",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 0,
+				"fraction": true,
+				"precision": 2
 			},
-			"customtext" :
-			{
-				"order" : 41,
-				"text" : "Texto",
-				"type" : "textinput",
-				"value" : "GANWALK",
-				"condition" : "showtext.value == true"
+			"reverb": {
+				"order": 17,
+				"text": "Câmara Etérea (Rastro)",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 0,
+				"fraction": true,
+				"precision": 2
 			},
-			"textsize" :
-			{
-				"order" : 42,
-				"text" : "Tamanho do texto",
-				"type" : "slider",
-				"min" : 2,
-				"max" : 25,
-				"value" : 10,
-				"condition" : "showtext.value == true"
+			"chorus": {
+				"order": 18,
+				"text": "Oscilador de Realidades",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 0,
+				"fraction": true,
+				"precision": 2
 			},
-			"textopacity" :
-			{
-				"order" : 43,
-				"text" : "Opacidade do texto",
-				"type" : "slider",
-				"min" : 0,
-				"max" : 1,
-				"value" : 1,
-				"fraction" : true,
-				"precision" : 2,
-				"condition" : "showtext.value == true"
+			"filter": {
+				"order": 19,
+				"text": "Véu Sonoro",
+				"type": "slider",
+				"min": 0,
+				"max": 100,
+				"value": 0
 			},
-			"textglow" :
-			{
-				"order" : 44,
-				"text" : "Brilho neon no texto",
-				"type" : "bool",
-				"value" : true,
-				"condition" : "showtext.value == true"
+			"overdrive": {
+				"order": 20,
+				"text": "Distorção Cósmica",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 0,
+				"fraction": true,
+				"precision": 2
 			},
-			"quality" :
-			{
-				"order" : 50,
-				"text" : "Resolução de render",
-				"type" : "combo",
-				"value" : "1",
-				"options" :
-				[
-					{ "label" : "Nativa (100%)", "value" : "1" },
-					{ "label" : "Equilibrada (75%)", "value" : "0.75" },
-					{ "label" : "Leve (50%)", "value" : "0.5" }
+			"bloom": {
+				"order": 21,
+				"text": "Brilho extra (bloom)",
+				"type": "slider",
+				"min": 0,
+				"max": 2,
+				"value": 0,
+				"fraction": true,
+				"precision": 2
+			},
+			"showshape": {
+				"order": 22,
+				"text": "Mostrar icosaedro",
+				"type": "bool",
+				"value": true
+			},
+			"showgrid": {
+				"order": 23,
+				"text": "Mostrar grade",
+				"type": "bool",
+				"value": true
+			},
+			"showwaves": {
+				"order": 24,
+				"text": "Mostrar ondas",
+				"type": "bool",
+				"value": true
+			},
+			"showtext": {
+				"order": 25,
+				"text": "Mostrar texto",
+				"type": "bool",
+				"value": true
+			},
+			"customtext": {
+				"order": 26,
+				"text": "Texto",
+				"type": "textinput",
+				"value": "GANWALK",
+				"condition": "showtext.value == true"
+			},
+			"textsize": {
+				"order": 27,
+				"text": "Tamanho do texto",
+				"type": "slider",
+				"min": 2,
+				"max": 25,
+				"value": 10,
+				"condition": "showtext.value == true"
+			},
+			"textopacity": {
+				"order": 28,
+				"text": "Opacidade do texto",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 1,
+				"fraction": true,
+				"precision": 2,
+				"condition": "showtext.value == true"
+			},
+			"textglow": {
+				"order": 29,
+				"text": "Brilho neon no texto",
+				"type": "bool",
+				"value": true,
+				"condition": "showtext.value == true"
+			},
+			"quality": {
+				"order": 30,
+				"text": "Resolução de render",
+				"type": "combo",
+				"value": "1",
+				"options": [
+					{
+						"label": "Nativa (100%)",
+						"value": "1"
+					},
+					{
+						"label": "Equilibrada (75%)",
+						"value": "0.75"
+					},
+					{
+						"label": "Leve (50%)",
+						"value": "0.5"
+					}
 				]
 			}
 		}

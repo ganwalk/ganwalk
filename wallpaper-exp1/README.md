@@ -37,6 +37,10 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Propriedade | O que faz |
 | :--- | :--- |
 | Cor de fundo / Cor de foco | As mesmas cores da Exp I (padrão `#120c07` / `#ece0c6`). |
+| Mostrar relógio | Hora grande no topo, com a data embaixo ("Quarta-feira, 18 de novembro"), na fonte pixel Silkscreen do site. O brilho respira com o grave. |
+| Formato 24 horas / Mostrar segundos / Mostrar data | Ajustes do relógio. Com o formato 24h desligado aparece AM/PM. |
+| Tamanho, distância do topo, opacidade e brilho do relógio | Posicionamento e aparência do relógio. |
+| Descer a cena | Quanto a grade, o icosaedro, as ondas e o texto descem para abrir espaço ao relógio. Com o relógio desligado, a cena volta à posição original. |
 | Sensibilidade ao som | Multiplica a reação ao áudio (0–3). |
 | Ganho automático | Normaliza o volume. Desligue para que músicas baixas mexam menos. |
 | Girar ao contrário | Equivalente visual do botão "reverso" do site. |
@@ -63,5 +67,5 @@ wallpaper-exp1/
 ├── project.json   # manifesto do Wallpaper Engine (tipo web, áudio ligado, propriedades)
 ├── preview.jpg    # miniatura mostrada no Wallpaper Engine / Workshop
 ├── lib/           # Three.js r128 + EffectComposer/UnrealBloomPass
-└── fonts/         # Astloch Bold (SIL OFL, ver fonts/OFL.txt)
+└── fonts/         # Astloch Bold e Silkscreen (SIL OFL, ver fonts/OFL-*.txt)
 ```

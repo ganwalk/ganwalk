@@ -59,10 +59,48 @@
     }
     #main-text.no-glow { text-shadow: none; }
     #main-text.hidden { display: none; }
+
+    /* --- RELÓGIO E DATA --- */
+    @font-face {
+        font-family: 'Silkscreen';
+        font-weight: 400;
+        font-display: block;
+        src: url('fonts/Silkscreen-Regular.woff2') format('woff2');
+    }
+    :root { --clock-size: 5; --clock-top: 7; --clock-opacity: 1; --pulse: 0; }
+    #clock {
+        position: absolute; left: 0; right: 0; top: calc(var(--clock-top) * 1vh);
+        z-index: 1; pointer-events: none; text-align: center;
+        font-family: 'Silkscreen', monospace; color: var(--highlight-color);
+        opacity: var(--clock-opacity);
+        /* O brilho respira com o grave */
+        text-shadow:
+            0 0 calc(6px + var(--pulse) * 10px) rgba(var(--highlight-rgb), 0.85),
+            0 0 calc(14px + var(--pulse) * 20px) rgba(var(--highlight-rgb), 0.45);
+        transition: color 0.5s ease;
+    }
+    #clock.no-glow { text-shadow: none; }
+    #clock.hidden { display: none; }
+    #clock-time {
+        font-size: calc(var(--clock-size) * 1vw); line-height: 1;
+        letter-spacing: 0.08em; padding-left: 0.08em; /* compensa o espaçamento no centro */
+        font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    #clock-ampm { font-size: 0.28em; letter-spacing: 0.05em; vertical-align: top; margin-left: 0.15em; }
+    #clock-seconds { font-size: 0.45em; opacity: 0.75; margin-left: 0.1em; }
+    #clock-date {
+        font-size: calc(var(--clock-size) * 0.24vw); margin-top: 0.7em;
+        letter-spacing: 0.12em; white-space: nowrap;
+    }
+    #clock-date.hidden { display: none; }
 </style>
 </head>
 <body>
 <div id="container">
+    <div id="clock">
+        <div id="clock-time"><span id="clock-hm">00:00</span><span id="clock-seconds"></span><span id="clock-ampm"></span></div>
+        <div id="clock-date"></div>
+    </div>
     <div id="main-text">GANWALK</div>
     <canvas id="canvas"></canvas>
 </div>
@@ -98,6 +136,8 @@ const Wallpaper = {
         showGrid: true, showWaves: true, showShape: true,
         showText: true, textGlow: true, idleMotion: true,
         quality: 1, fps: 0,
+        showClock: true, showDate: true, showSeconds: false, hour24: true, clockGlow: true,
+        sceneOffset: 8, // quanto a cena desce para abrir espaço ao relógio (unidades da cena)
     },
 
     // Estado de áudio
@@ -115,6 +155,8 @@ const Wallpaper = {
         this.setupAudio();
         this.onResize();
         this.animate();
+        this.updateClock();
+        setInterval(() => this.updateClock(), 1000);
     },
 
     // ---------- ÁUDIO DO SISTEMA ----------
@@ -181,6 +223,8 @@ const Wallpaper = {
     initThree() {
         const cvs = document.getElementById('canvas');
         this.scene = new THREE.Scene();
+        // Tudo que é 3D fica num grupo raiz, para poder descer a cena inteira.
+        this.root = new THREE.Group(); this.scene.add(this.root);
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.camera.position.z = 50;
 
@@ -200,11 +244,11 @@ const Wallpaper = {
         this.fadeMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: this.bgThree, transparent: true, opacity: 1.0 }));
         this.fadeScene.add(this.fadeMesh);
 
-        this.visualGroup = new THREE.Group(); this.visualGroup.position.y = 12; this.scene.add(this.visualGroup);
+        this.visualGroup = new THREE.Group(); this.visualGroup.position.y = 12; this.root.add(this.visualGroup);
         this.centralShape = new THREE.Mesh(new THREE.IcosahedronGeometry(8, 0), new THREE.MeshBasicMaterial({ color: this.fgThree, wireframe: true, transparent: true, opacity: 1 }));
         this.visualGroup.add(this.centralShape);
 
-        const gridGroup = new THREE.Group(); gridGroup.position.y = 12; this.scene.add(gridGroup);
+        const gridGroup = new THREE.Group(); gridGroup.position.y = 12; this.root.add(gridGroup);
         const lm = new THREE.LineBasicMaterial({ color: this.fgThree, transparent: true, opacity: 0.6 });
         for (let i = 0; i <= 30; i++) {
             let pts = []; for (let j = 0; j <= 30; j++) pts.push(new THREE.Vector3(j - 15, i - 15, 0));
@@ -216,7 +260,7 @@ const Wallpaper = {
         }
 
         // No site, com o menu recolhido, as ondas sobem para y=-12 e esticam 4x.
-        this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -12; this.waveLinesGroup.scale.y = 4; this.scene.add(this.waveLinesGroup);
+        this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -12; this.waveLinesGroup.scale.y = 4; this.root.add(this.waveLinesGroup);
         for (let k = -1; k <= 1; k++) {
             const pts = []; for (let j = 0; j <= 100; j++) pts.push(new THREE.Vector3((j / 100 - 0.5) * 70, k, 0));
             const g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
@@ -276,7 +320,8 @@ const Wallpaper = {
 
         const dVal = this.fx.delay, rVal = this.fx.reverb, odVal = this.fx.overdrive, cVal = this.fx.chorus;
 
-        document.getElementById('main-text').style.transform = `scale(${1 + avg * 0.05 * dir})`;
+        document.getElementById('main-text').style.transform = `translateY(${this.textShiftPx}px) scale(${1 + avg * 0.05 * dir})`;
+        document.documentElement.style.setProperty('--pulse', Math.min(1, b).toFixed(3));
         this.fadeMesh.material.opacity = 0.02 + 0.98 * Math.pow(1.0 - rVal, 3);
         this.renderer.setClearColor(this.bgThree, 1 - (dVal * 0.9));
         this.visualGroup.rotation.y += (0.005 * idle + avg * 0.01) * dir;
@@ -328,8 +373,33 @@ const Wallpaper = {
         this.composer.setPixelRatio && this.composer.setPixelRatio(window.devicePixelRatio * this.settings.quality);
         this.composer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('main-text').style.fontSize = (this.textSize * (window.innerWidth / 100)) + 'px';
+        this.applyOffset();
     },
     textSize: 10,
+    textShiftPx: 0,
+
+    // Desce a cena 3D e o texto juntos. Com a câmera em z=50 e FOV 75, a altura
+    // visível no plano z=0 é 2·50·tan(37,5°) ≈ 76,7 unidades.
+    applyOffset() {
+        const off = this.settings.showClock ? this.settings.sceneOffset : 0;
+        this.root.position.y = -off;
+        this.textShiftPx = off * window.innerHeight / (100 * Math.tan(THREE.MathUtils.degToRad(37.5)));
+    },
+
+    // ---------- RELÓGIO ----------
+    updateClock() {
+        const s = this.settings, now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        let hh = now.getHours(), ampm = '';
+        if (!s.hour24) { ampm = hh < 12 ? 'AM' : 'PM'; hh = hh % 12 || 12; }
+        document.getElementById('clock-hm').textContent = `${pad(hh)}:${pad(now.getMinutes())}`;
+        document.getElementById('clock-seconds').textContent = s.showSeconds ? `:${pad(now.getSeconds())}` : '';
+        document.getElementById('clock-ampm').textContent = ampm;
+        // "Segunda-feira, 28 de outubro"
+        let d = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+        d = d.charAt(0).toUpperCase() + d.slice(1);
+        document.getElementById('clock-date').textContent = d;
+    },
 
     // ---------- CORES / VISIBILIDADE ----------
     setBgColor(c) {
@@ -357,6 +427,12 @@ const Wallpaper = {
         const txt = document.getElementById('main-text');
         txt.classList.toggle('hidden', !s.showText);
         txt.classList.toggle('no-glow', !s.textGlow);
+        const clock = document.getElementById('clock');
+        clock.classList.toggle('hidden', !s.showClock);
+        clock.classList.toggle('no-glow', !s.clockGlow);
+        document.getElementById('clock-date').classList.toggle('hidden', !s.showDate);
+        this.applyOffset();
+        this.updateClock();
     },
 };
 
@@ -394,6 +470,16 @@ window.wallpaperPropertyListener = {
         if (p.textopacity) document.documentElement.style.setProperty('--text-opacity', p.textopacity.value);
 
         if (p.quality) { s.quality = parseFloat(p.quality.value); W.onResize(); }
+
+        if (p.showclock) s.showClock = p.showclock.value;
+        if (p.showdate) s.showDate = p.showdate.value;
+        if (p.showseconds) s.showSeconds = p.showseconds.value;
+        if (p.hour24) s.hour24 = p.hour24.value;
+        if (p.clockglow) s.clockGlow = p.clockglow.value;
+        if (p.clocksize) document.documentElement.style.setProperty('--clock-size', p.clocksize.value);
+        if (p.clocktop) document.documentElement.style.setProperty('--clock-top', p.clocktop.value);
+        if (p.clockopacity) document.documentElement.style.setProperty('--clock-opacity', p.clockopacity.value);
+        if (p.sceneoffset) s.sceneOffset = p.sceneoffset.value;
 
         W.applyVisibility();
     },
