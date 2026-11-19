@@ -41,6 +41,11 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Formato 24 horas / Mostrar segundos / Mostrar data | Ajustes do relógio. Com o formato 24h desligado aparece AM/PM. |
 | Tamanho, distância do topo, opacidade e brilho do relógio | Posicionamento e aparência do relógio. |
 | Descer a cena | Quanto a grade, o icosaedro, as ondas e o texto descem para abrir espaço ao relógio. Com o relógio desligado, a cena volta à posição original. |
+| Onda de dither | Liga a faixa que atravessa a tela de tempos em tempos e, por onde passa, transforma tudo (cena, "GANWALK", relógio) num retículo de dither. |
+| Intervalo, duração, largura | De quanto em quanto tempo a onda passa (10 s por padrão), quanto tempo leva para atravessar e a largura da faixa. |
+| Tamanho do pixel / Intensidade do retículo | O tamanho de cada ponto e quanto o fundo escuro vira pontilhado. |
+| Cores do dither | "Duotone" usa as cores do tema. "Máscara de cor" é igual ao Playground do portfólio: cor original nos pontos acesos, preto no resto. |
+| Direção da onda | Esquerda para direita, direita para esquerda, de cima para baixo ou na diagonal. |
 | Sensibilidade ao som | Multiplica a reação ao áudio (0–3). |
 | Ganho automático | Normaliza o volume. Desligue para que músicas baixas mexam menos. |
 | Girar ao contrário | Equivalente visual do botão "reverso" do site. |
@@ -53,6 +58,17 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 
 O limite de FPS e a pausa (quando um app fica em tela cheia) seguem as configurações do
 próprio Wallpaper Engine.
+
+## Onda de dither
+
+O motor é o mesmo do Playground do portfólio (`ganwalk/portifolio`,
+`src/lib/dither.ts` e `src/lib/use-bayer-dither.ts`): matriz de Bayer 4×4 construída
+recursivamente, luminância Rec. 601, viés de +42 no limiar e a fase da matriz
+deslocada a cada 175 ms, o que dá a cintilação. Durante a passagem, o quadro inteiro
+é copiado para um canvas em baixa resolução, os textos são redesenhados por cima,
+e o resultado é ampliado sem suavização. A própria borda da onda também é dither:
+a força da faixa passa pelo mesmo limiar da matriz, então ela se dissolve em pontos
+em vez de ter uma borda lisa. Fora da onda, nada disso roda.
 
 ## Interação
 
