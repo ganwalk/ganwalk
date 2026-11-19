@@ -123,7 +123,7 @@
 				"type": "slider",
 				"min": 0.5,
 				"max": 6,
-				"value": 1.8,
+				"value": 2.4,
 				"fraction": true,
 				"precision": 1,
 				"condition": "ditherenabled.value == true",
@@ -174,11 +174,15 @@
 				"order": 18
 			},
 			"ditherdirection": {
-				"text": "Direção da onda",
+				"text": "Origem da onda",
 				"type": "combo",
-				"value": "right",
+				"value": "radial",
 				"condition": "ditherenabled.value == true",
 				"options": [
+					{
+						"label": "Do icosaedro (anel que se expande)",
+						"value": "radial"
+					},
 					{
 						"label": "Esquerda → direita",
 						"value": "right"
