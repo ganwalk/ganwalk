@@ -502,6 +502,9 @@ window.wallpaperPropertyListener = {
         if (p.ditherlift) D.lift = p.ditherlift.value;
         if (p.dithermode) D.mode = p.dithermode.value;
         if (p.ditherdirection) D.direction = p.ditherdirection.value;
+        if (p.ditherbass) D.bassTrigger = p.ditherbass.value;
+        if (p.ditherbasssens) D.bassSensitivity = p.ditherbasssens.value;
+        if (p.ditherbasscooldown) D.bassCooldownMs = p.ditherbasscooldown.value * 1000;
 
         W.applyVisibility();
     },
@@ -600,9 +603,29 @@ const DitherWave = {
     trigger() { this.startedAt = performance.now(); },
 
     // Chamado no fim de cada quadro do Wallpaper.animate, depois do render.
+    // Disparo pelo grave: compara o grave do quadro com a média recente dele.
+    // Um salto bem acima da média (a batida de um bumbo, um drop) dispara a
+    // onda na hora, sem esperar o intervalo. O tempo mínimo entre disparos
+    // evita que uma sequência de bumbos vire uma onda atrás da outra.
+    bassTrigger: true,
+    bassSensitivity: 0.5,  // 0 a 1
+    bassCooldownMs: 2500,
+    bassAvg: 0, lastKickAt: -Infinity,
+
+    detectKick(now) {
+        const bass = Wallpaper.bands.b;
+        const isKick = bass > 0.45 && bass - this.bassAvg > 0.35 - 0.25 * this.bassSensitivity;
+        // Média lenta (≈1 s), atualizada depois da comparação.
+        this.bassAvg += (bass - this.bassAvg) * 0.03;
+        if (!isKick || now - this.lastKickAt < this.bassCooldownMs) return false;
+        this.lastKickAt = now;
+        return true;
+    },
+
     frame(now) {
+        const kick = this.enabled && this.bassTrigger && this.detectKick(now);
         if (this.startedAt < 0) {
-            if (this.enabled && now >= this.nextAt) this.startedAt = now;
+            if (this.enabled && (kick || now >= this.nextAt)) this.startedAt = now;
             else return;
         }
         const k = (now - this.startedAt) / this.durationMs;

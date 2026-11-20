@@ -42,6 +42,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Tamanho, distância do topo, opacidade e brilho do relógio | Posicionamento e aparência do relógio. |
 | Descer a cena | Quanto a grade, o icosaedro, as ondas e o texto descem para abrir espaço ao relógio. Com o relógio desligado, a cena volta à posição original. |
 | Onda de dither | De tempos em tempos uma onda nasce no icosaedro e se expande pela tela como um anel. Por onde passa, transforma tudo (cena, "GANWALK", relógio) num retículo de dither. |
+| Disparar quando o grave bater forte | Além do intervalo, a onda sai na hora quando o grave dá um salto bem acima da média recente (bumbo forte, drop). A sensibilidade decide o tamanho do salto, e o tempo mínimo evita uma onda atrás da outra. |
 | Intervalo, duração, largura | De quanto em quanto tempo a onda passa (10 s por padrão), quanto tempo leva para atravessar e a largura do anel. |
 | Tamanho do pixel / Intensidade do retículo | O tamanho de cada ponto e quanto o fundo escuro vira pontilhado. |
 | Cores do dither | "Duotone" usa as cores do tema. "Máscara de cor" é igual ao Playground do portfólio: cor original nos pontos acesos, preto no resto. |

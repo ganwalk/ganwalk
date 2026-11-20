@@ -118,6 +118,35 @@
 				"condition": "ditherenabled.value == true",
 				"order": 13
 			},
+			"ditherbass": {
+				"text": "Disparar quando o grave bater forte",
+				"type": "bool",
+				"value": true,
+				"condition": "ditherenabled.value == true",
+				"order": 14
+			},
+			"ditherbasssens": {
+				"text": "Sensibilidade do disparo",
+				"type": "slider",
+				"min": 0,
+				"max": 1,
+				"value": 0.5,
+				"fraction": true,
+				"precision": 2,
+				"condition": "ditherbass.value == true",
+				"order": 15
+			},
+			"ditherbasscooldown": {
+				"text": "Tempo mínimo entre disparos (s)",
+				"type": "slider",
+				"min": 0.5,
+				"max": 10,
+				"value": 2.5,
+				"fraction": true,
+				"precision": 1,
+				"condition": "ditherbass.value == true",
+				"order": 16
+			},
 			"ditherduration": {
 				"text": "Duração da travessia (s)",
 				"type": "slider",
@@ -127,7 +156,7 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "ditherenabled.value == true",
-				"order": 14
+				"order": 17
 			},
 			"ditherwidth": {
 				"text": "Largura da onda (%)",
@@ -136,7 +165,7 @@
 				"max": 100,
 				"value": 35,
 				"condition": "ditherenabled.value == true",
-				"order": 15
+				"order": 18
 			},
 			"ditherpixel": {
 				"text": "Tamanho do pixel do dither",
@@ -145,7 +174,7 @@
 				"max": 8,
 				"value": 3,
 				"condition": "ditherenabled.value == true",
-				"order": 16
+				"order": 19
 			},
 			"ditherlift": {
 				"text": "Intensidade do retículo",
@@ -154,7 +183,7 @@
 				"max": 200,
 				"value": 55,
 				"condition": "ditherenabled.value == true",
-				"order": 17
+				"order": 20
 			},
 			"dithermode": {
 				"text": "Cores do dither",
@@ -171,7 +200,7 @@
 						"value": "mask"
 					}
 				],
-				"order": 18
+				"order": 21
 			},
 			"ditherdirection": {
 				"text": "Origem da onda",
@@ -200,10 +229,10 @@
 						"value": "diagonal"
 					}
 				],
-				"order": 19
+				"order": 22
 			},
 			"sensitivity": {
-				"order": 20,
+				"order": 23,
 				"text": "Sensibilidade ao som",
 				"type": "slider",
 				"min": 0,
@@ -214,25 +243,25 @@
 				"editable": true
 			},
 			"autogain": {
-				"order": 21,
+				"order": 24,
 				"text": "Ganho automático (reage igual em volume baixo)",
 				"type": "bool",
 				"value": true
 			},
 			"reverse": {
-				"order": 22,
+				"order": 25,
 				"text": "Girar ao contrário",
 				"type": "bool",
 				"value": false
 			},
 			"idlemotion": {
-				"order": 23,
+				"order": 26,
 				"text": "Movimento no silêncio",
 				"type": "bool",
 				"value": true
 			},
 			"delay": {
-				"order": 24,
+				"order": 27,
 				"text": "Eco Profundo",
 				"type": "slider",
 				"min": 0,
@@ -242,7 +271,7 @@
 				"precision": 2
 			},
 			"reverb": {
-				"order": 25,
+				"order": 28,
 				"text": "Câmara Etérea (Rastro)",
 				"type": "slider",
 				"min": 0,
@@ -252,7 +281,7 @@
 				"precision": 2
 			},
 			"chorus": {
-				"order": 26,
+				"order": 29,
 				"text": "Oscilador de Realidades",
 				"type": "slider",
 				"min": 0,
@@ -262,7 +291,7 @@
 				"precision": 2
 			},
 			"filter": {
-				"order": 27,
+				"order": 30,
 				"text": "Véu Sonoro",
 				"type": "slider",
 				"min": 0,
@@ -270,7 +299,7 @@
 				"value": 0
 			},
 			"overdrive": {
-				"order": 28,
+				"order": 31,
 				"text": "Distorção Cósmica",
 				"type": "slider",
 				"min": 0,
@@ -280,7 +309,7 @@
 				"precision": 2
 			},
 			"bloom": {
-				"order": 29,
+				"order": 32,
 				"text": "Brilho extra (bloom)",
 				"type": "slider",
 				"min": 0,
@@ -290,38 +319,38 @@
 				"precision": 2
 			},
 			"showshape": {
-				"order": 30,
+				"order": 33,
 				"text": "Mostrar icosaedro",
 				"type": "bool",
 				"value": true
 			},
 			"showgrid": {
-				"order": 31,
+				"order": 34,
 				"text": "Mostrar grade",
 				"type": "bool",
 				"value": true
 			},
 			"showwaves": {
-				"order": 32,
+				"order": 35,
 				"text": "Mostrar ondas",
 				"type": "bool",
 				"value": true
 			},
 			"showtext": {
-				"order": 33,
+				"order": 36,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 34,
+				"order": 37,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 35,
+				"order": 38,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -330,7 +359,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textopacity": {
-				"order": 36,
+				"order": 39,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -341,14 +370,14 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 37,
+				"order": 40,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
 				"condition": "showtext.value == true"
 			},
 			"quality": {
-				"order": 38,
+				"order": 41,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",
