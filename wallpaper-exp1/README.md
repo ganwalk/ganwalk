@@ -17,7 +17,7 @@ reproduzindo** (Spotify, YouTube, jogos…).
    ser a saída que você está ouvindo). Para arrastar o icosaedro, a interação com o mouse
    precisa estar ligada nas configurações.
 
-Tudo roda localmente (Three.js r128 e as fontes Astloch e Inter estão em `lib/` e `fonts/`), então
+Tudo roda localmente (Three.js r128 e as fontes Astloch, Inter e Silkscreen estão em `lib/` e `fonts/`), então
 não precisa de internet.
 
 ## Como o som chega
@@ -47,6 +47,9 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Tamanho do pixel / Intensidade do retículo | O tamanho de cada ponto e quanto o fundo escuro vira pontilhado. |
 | Cores do dither | "Duotone" usa as cores do tema. "Máscara de cor" é igual ao Playground do portfólio: cor original nos pontos acesos, preto no resto. |
 | Origem da onda | Do icosaedro (padrão) ou, se preferir uma faixa reta, da esquerda, da direita, de cima ou na diagonal. |
+| Mostrar a música tocando | Enquanto uma música toca no computador, a cada pulso de dither o "GANWALK" vira o reprodutor logo antes da onda sair do icosaedro, e volta logo depois que ela passa. Música nova também dispara um pulso. |
+| Tempo do reprodutor após o pulso | Quanto o reprodutor fica na tela depois que a onda passa (0,6 s por padrão). |
+| Tamanho do reprodutor / barra de progresso | Escala do reprodutor e a barra de progresso (só aparece se o player informar a posição). |
 | Sensibilidade ao som | Multiplica a reação ao áudio (0–3). |
 | Ganho automático | Normaliza o volume. Desligue para que músicas baixas mexam menos. |
 | Girar ao contrário | Equivalente visual do botão "reverso" do site. |
@@ -54,11 +57,26 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Eco Profundo, Câmara Etérea, Oscilador de Realidades, Véu Sonoro, Distorção Cósmica | Os controles do site. Não mexem mais no áudio (o som é do sistema), mas dirigem a parte visual como antes: rastro e pulsação, bloom e rastro, giro em Z, apagar a grade, achatar a forma. |
 | Brilho extra (bloom) | Bloom fixo somado ao da Câmara Etérea. |
 | Mostrar icosaedro / grade / ondas / texto | Liga e desliga cada camada. |
+| Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, com a largura exata do reprodutor. Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
 | Texto, tamanho, opacidade, brilho neon | Personaliza o "GANWALK" do centro. |
 | Resolução de render | 100%, 75% ou 50%. Use 75% ou 50% em monitores 4K ou PCs mais fracos. |
 
 O limite de FPS e a pausa (quando um app fica em tela cheia) seguem as configurações do
 próprio Wallpaper Engine.
+
+## Reprodutor (tocando agora)
+
+Usa a integração de mídia do Wallpaper Engine, que lê o que aparece no controle de
+mídia do Windows (Spotify, Tidal, navegador e outros). Se o reprodutor não aparecer,
+confira se a integração de mídia está ligada nas configurações do Wallpaper Engine.
+
+O visual segue o painel de controles da Exp I: fundo escuro com desfoque, borda
+fina, rótulos em Silkscreen, trilho de progresso e o mini canvas com as três ondas.
+A capa do álbum passa pelo mesmo dither do portfólio e cintila a cada 175 ms.
+
+Todas as transições são em dither: o texto, o reprodutor, o relógio e a data entram
+e saem ponto a ponto, na ordem da matriz de Bayer 4×4 (uma máscara CSS por nível da
+matriz, de 0 a 16).
 
 ## Onda de dither
 
@@ -84,5 +102,5 @@ wallpaper-exp1/
 ├── project.json   # manifesto do Wallpaper Engine (tipo web, áudio ligado, propriedades)
 ├── preview.jpg    # miniatura mostrada no Wallpaper Engine / Workshop
 ├── lib/           # Three.js r128 + EffectComposer/UnrealBloomPass
-└── fonts/         # Astloch Bold e Inter (SIL OFL, ver fonts/OFL-*.txt)
+└── fonts/         # Astloch Bold, Inter e Silkscreen (SIL OFL, ver fonts/OFL-*.txt)
 ```

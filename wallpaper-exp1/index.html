@@ -58,7 +58,65 @@
         will-change: transform;
     }
     #main-text.no-glow { text-shadow: none; }
-    #main-text.hidden { display: none; }
+
+    /* O "GANWALK" e a caixinha de música dividem o mesmo lugar no centro. */
+    #slot { position: relative; z-index: 1; will-change: transform; }
+    /* Começam escondidos: a primeira aparição também é em dither. */
+    #main-text, #clock, #clock-date { visibility: hidden; }
+
+    /* --- TOCANDO AGORA ---
+       Mesma linguagem do painel de controles da Exp I no site: fundo
+       --control-bg, borda fina, brilho difuso, rótulos em Silkscreen,
+       trilho de 4px e o mini canvas das três ondas. Desenhado a 1920px
+       de largura e escalado pela tela (--np-scale). */
+    @font-face {
+        font-family: 'Silkscreen';
+        font-weight: 400;
+        font-display: block;
+        src: url('fonts/Silkscreen-Regular.woff2') format('woff2');
+    }
+    :root { --control-bg: rgba(18, 12, 7, 0.9); --border-color: rgba(236, 224, 198, 0.3); --np-scale: 1; --np-pulse: 1; }
+    #now-playing {
+        position: absolute; left: 50%; top: 50%; width: 640px;
+        transform: translate(-50%, -50%) scale(calc(var(--np-scale) * var(--np-pulse)));
+        display: grid; grid-template-columns: 132px 1fr; column-gap: 22px; row-gap: 16px;
+        padding: 20px 22px; border-radius: 8px;
+        background: var(--control-bg); border: 1px solid var(--border-color);
+        -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+        box-shadow: 0 0 30px rgba(var(--highlight-rgb), 0.15);
+        color: var(--highlight-color); font-family: 'Inter', sans-serif;
+        pointer-events: none; visibility: hidden;
+    }
+    #np-art {
+        width: 132px; height: 132px; display: block; border-radius: 4px;
+        border: 1px solid var(--border-color);
+        image-rendering: pixelated; image-rendering: crisp-edges;
+    }
+    #np-info { display: flex; flex-direction: column; min-width: 0; justify-content: center; }
+    .np-label {
+        font-family: 'Silkscreen', monospace; font-size: 11px; letter-spacing: 0.5px;
+        text-transform: uppercase; display: flex; align-items: center; gap: 8px; opacity: 0.9;
+    }
+    #np-dot { width: 7px; height: 7px; background: var(--highlight-color); box-shadow: 0 0 6px var(--highlight-color); }
+    #np-title {
+        font-size: 26px; font-weight: 600; line-height: 1.15; margin-top: 10px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        text-shadow: 0 0 10px rgba(var(--highlight-rgb), 0.45);
+    }
+    #np-artist {
+        font-size: 15px; font-weight: 400; margin-top: 4px; opacity: 0.75;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #np-progress { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    #np-progress.hidden { display: none; }
+    #np-track { flex: 1; height: 4px; border-radius: 2px; background: var(--border-color); position: relative; overflow: hidden; }
+    #np-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--highlight-color); box-shadow: 0 0 6px var(--highlight-color); }
+    #np-time { font-family: 'Silkscreen', monospace; font-size: 11px; white-space: nowrap; }
+    #np-mini {
+        grid-column: 1 / -1; height: 30px; border-radius: 6px; overflow: hidden;
+        background: rgba(var(--highlight-rgb), 0.05); border: 1px solid var(--border-color);
+    }
+    #np-mini canvas { width: 100%; height: 100%; display: block; }
 
     /* --- RELÓGIO E DATA --- */
     @font-face {
@@ -110,7 +168,19 @@
         <div id="clock-time"><span id="clock-hm">00:00</span><span id="clock-seconds"></span><span id="clock-ampm"></span></div>
         <div id="clock-date"></div>
     </div>
-    <div id="main-text">GANWALK</div>
+    <div id="slot">
+        <div id="main-text">GANWALK</div>
+        <div id="now-playing">
+            <canvas id="np-art" width="44" height="44"></canvas>
+            <div id="np-info">
+                <div class="np-label"><span id="np-dot"></span><span id="np-status">Tocando agora</span></div>
+                <div id="np-title"></div>
+                <div id="np-artist"></div>
+                <div id="np-progress"><div id="np-track"><div id="np-fill"></div></div><span id="np-time"></span></div>
+            </div>
+            <div id="np-mini"><canvas id="np-mini-canvas"></canvas></div>
+        </div>
+    </div>
     <canvas id="canvas"></canvas>
     <canvas id="dither"></canvas>
 </div>
@@ -270,7 +340,7 @@ const Wallpaper = {
         }
 
         // No site, com o menu recolhido, as ondas sobem para y=-12 e esticam 4x.
-        this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -12; this.waveLinesGroup.scale.y = 4; this.root.add(this.waveLinesGroup);
+        this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -20; this.root.add(this.waveLinesGroup);
         for (let k = -1; k <= 1; k++) {
             const pts = []; for (let j = 0; j <= 100; j++) pts.push(new THREE.Vector3((j / 100 - 0.5) * 70, k, 0));
             const g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
@@ -330,7 +400,9 @@ const Wallpaper = {
 
         const dVal = this.fx.delay, rVal = this.fx.reverb, odVal = this.fx.overdrive, cVal = this.fx.chorus;
 
-        document.getElementById('main-text').style.transform = `translateY(${this.textShiftPx}px) scale(${1 + avg * 0.05 * dir})`;
+        document.getElementById('slot').style.transform = `translateY(${this.textShiftPx}px)`;
+        document.getElementById('main-text').style.transform = `scale(${1 + avg * 0.05 * dir})`;
+        NowPlaying.frame(b, m, h, t, dir);
         document.documentElement.style.setProperty('--pulse', Math.min(1, b).toFixed(3));
         this.fadeMesh.material.opacity = 0.02 + 0.98 * Math.pow(1.0 - rVal, 3);
         this.renderer.setClearColor(this.bgThree, 1 - (dVal * 0.9));
@@ -361,10 +433,21 @@ const Wallpaper = {
         }
 
         if (this.settings.showWaves) {
+            const gap = this.layoutWaves();
+            // Mesma fórmula do site (frequência, velocidade e proporção 45/20/15
+            // entre grave, médio e agudo), mas a onda agora sobe e desce no
+            // plano da tela em vez de vir em direção à câmera: assim a largura
+            // na tela é exatamente a do reprodutor, sem a perspectiva esticar.
+            const amp = gap * 0.32;
             this.waveLines.forEach((l, idx) => {
                 const pos = l.geometry.attributes.position.array;
                 const band = idx === 0 ? b : (idx === 1 ? m : h);
-                for (let i = 0; i < pos.length; i += 3) pos[i + 2] = Math.sin(pos[i] * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * (idx === 0 ? 45 : (idx === 1 ? 20 : 15));
+                const baseY = (idx - 1) * gap * 0.08;
+                const k = idx === 0 ? 1 : (idx === 1 ? 20 / 45 : 15 / 45);
+                for (let i = 0; i < pos.length; i += 3) {
+                    pos[i + 1] = baseY + Math.sin(pos[i] * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * amp * k;
+                    pos[i + 2] = 0;
+                }
                 l.geometry.attributes.position.needsUpdate = true;
                 l.material.opacity = Math.min(1, 0.5 + band * 0.5);
             });
@@ -389,6 +472,34 @@ const Wallpaper = {
     },
     textSize: 10,
     textShiftPx: 0,
+    taskbarPx: 48,
+
+    // As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor,
+    // o que for mais baixo) e a barra de tarefas, com a largura do reprodutor.
+    // Devolve a altura do vão em unidades da cena.
+    layoutWaves() {
+        const H = window.innerHeight;
+        const unitsPerPx = 100 * Math.tan(THREE.MathUtils.degToRad(37.5)) / H; // altura visível em z=0 / altura da tela
+        const slot = document.getElementById('slot').getBoundingClientRect();
+        const box = document.getElementById('now-playing');
+        const npScale = window.innerWidth / 1920 * NowPlaying.boxSize;
+        const slotMid = slot.top + slot.height / 2;
+        const textBottom = slot.bottom;
+        const boxBottom = slotMid + box.offsetHeight * npScale / 2;
+        const top = Math.max(textBottom, boxBottom);
+        const bottom = H - this.taskbarPx;
+        const midPx = (top + bottom) / 2;
+        const gapPx = Math.max(20, bottom - top);
+        // Tela → mundo (câmera em y=0), depois → local do grupo raiz (que desce sceneOffset).
+        const worldY = (H / 2 - midPx) * unitsPerPx;
+        this.waveLinesGroup.position.y = worldY - this.root.position.y;
+        // As linhas vão de -35 a 35 (70 unidades): escala para a largura do reprodutor.
+        // Acompanha também o pulso de tamanho do reprodutor (--np-pulse).
+        const pulse = parseFloat(document.documentElement.style.getPropertyValue('--np-pulse')) || 1;
+        const widthUnits = box.offsetWidth * npScale * pulse * unitsPerPx;
+        this.waveLinesGroup.scale.set(widthUnits / 70, 1, 1);
+        return gapPx * unitsPerPx;
+    },
 
     // Desce a cena 3D e o texto juntos. Com a câmera em z=50 e FOV 75, a altura
     // visível no plano z=0 é 2·50·tan(37,5°) ≈ 76,7 unidades.
@@ -418,6 +529,7 @@ const Wallpaper = {
         this.bgThree.copy(c);
         const hex = '#' + c.getHexString();
         document.documentElement.style.setProperty('--bg-color', hex);
+        document.documentElement.style.setProperty('--control-bg', `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, 0.9)`);
         this.fadeMesh.material.color.copy(c);
     },
     setFgColor(c) {
@@ -425,6 +537,7 @@ const Wallpaper = {
         const hex = '#' + c.getHexString();
         document.documentElement.style.setProperty('--highlight-color', hex);
         document.documentElement.style.setProperty('--highlight-rgb', `${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}`);
+        document.documentElement.style.setProperty('--border-color', `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, 0.3)`);
         this.centralShape.material.color.copy(c);
         this.gridLines.forEach(l => l.material.color.copy(c));
         this.waveLines.forEach(l => l.material.color.copy(c));
@@ -436,13 +549,13 @@ const Wallpaper = {
         const gridOpacity = ((100 - this.fx.filter) / 100) * 0.6;
         this.gridLines.forEach(l => { l.visible = s.showGrid; l.material.opacity = gridOpacity; });
         this.waveLines.forEach(l => { l.visible = s.showWaves; });
-        const txt = document.getElementById('main-text');
-        txt.classList.toggle('hidden', !s.showText);
-        txt.classList.toggle('no-glow', !s.textGlow);
+        document.getElementById('main-text').classList.toggle('no-glow', !s.textGlow);
         const clock = document.getElementById('clock');
-        clock.classList.toggle('hidden', !s.showClock);
         clock.classList.toggle('no-glow', !s.clockGlow);
-        document.getElementById('clock-date').classList.toggle('hidden', !s.showDate);
+        // Toda entrada e saída passa pelo dither (ver DitherFade).
+        DitherFade.set(clock, s.showClock);
+        DitherFade.set(document.getElementById('clock-date'), s.showClock && s.showDate);
+        NowPlaying.update();
         this.applyOffset();
         this.updateClock();
     },
@@ -503,6 +616,14 @@ window.wallpaperPropertyListener = {
         if (p.dithermode) D.mode = p.dithermode.value;
         if (p.ditherdirection) D.direction = p.ditherdirection.value;
         if (p.ditherbass) D.bassTrigger = p.ditherbass.value;
+        if (p.ditherpixel) DitherFade.buildTiles();
+
+        const N = NowPlaying;
+        if (p.npenabled) N.enabled = p.npenabled.value;
+        if (p.npholdafter) N.holdAfter = p.npholdafter.value;
+        if (p.npsize) N.boxSize = p.npsize.value;
+        if (p.npprogress) N.showProgress = p.npprogress.value;
+        if (p.taskbar) W.taskbarPx = p.taskbar.value;
         if (p.ditherbasssens) D.bassSensitivity = p.ditherbasssens.value;
         if (p.ditherbasscooldown) D.bassCooldownMs = p.ditherbasscooldown.value * 1000;
 
@@ -622,17 +743,44 @@ const DitherWave = {
         return true;
     },
 
+    pending: false,   // a troca para o reprodutor está acontecendo e o pulso vem logo em seguida
+    requested: false, // alguém pediu um pulso fora de hora (música começou, faixa nova)
+
+    request() { this.requested = true; },
+
+    // Dispara o pulso. Se há música tocando, o "GANWALK" vira o reprodutor
+    // logo antes (NowPlaying.beforePulse) e só então a onda sai do icosaedro.
+    start() {
+        if (!this.enabled) {
+            // Onda desligada: o pedido (música nova) só troca o centro, sem onda.
+            if (NowPlaying.wantsSwap()) NowPlaying.beforePulse().then(() => setTimeout(() => NowPlaying.afterPulse(), this.durationMs));
+            return;
+        }
+        if (NowPlaying.wantsSwap()) {
+            this.pending = true;
+            NowPlaying.beforePulse().then(() => { this.pending = false; this.startedAt = performance.now(); });
+        } else {
+            this.startedAt = performance.now();
+        }
+    },
+
     frame(now) {
         const kick = this.enabled && this.bassTrigger && this.detectKick(now);
         if (this.startedAt < 0) {
-            if (this.enabled && (kick || now >= this.nextAt)) this.startedAt = now;
-            else return;
+            if (this.pending) return;
+            const due = this.requested || (this.enabled && (kick || now >= this.nextAt));
+            if (!due) return;
+            this.requested = false;
+            this.start();
+            if (this.startedAt < 0) return;
+            now = this.startedAt;
         }
         const k = (now - this.startedAt) / this.durationMs;
         if (k >= 1) {
             this.ctx.clearRect(0, 0, this.w, this.h);
             this.startedAt = -1;
             this.nextAt = now + this.intervalMs;
+            NowPlaying.afterPulse(); // ...e volta para o "GANWALK" logo depois
             return;
         }
         if (now - this.lastStep >= this.STEP_MS) {
@@ -652,20 +800,20 @@ const DitherWave = {
 
         // Os textos são DOM, fora do WebGL: redesenha cada um na mesma posição.
         const fg = '#' + Wallpaper.fgThree.getHexString();
-        const drawText = (el, text, alpha) => {
-            if (!el || !text || el.offsetParent === null) return;
+        const drawText = (el, text, alpha, align = 'center') => {
+            if (!el || !text || el.offsetParent === null || DitherFade.isHidden(el)) return;
             const r = el.getBoundingClientRect();
             if (r.width === 0) return;
             const cs = getComputedStyle(el);
             const scale = r.height / el.offsetHeight || 1; // pega o scale() do pulso
             const size = parseFloat(cs.fontSize) * scale * sx;
             ctx.font = `${cs.fontWeight} ${size}px ${cs.fontFamily}`;
-            ctx.textAlign = 'center';
+            ctx.textAlign = align;
             if ('letterSpacing' in ctx) ctx.letterSpacing = (parseFloat(cs.letterSpacing) || 0) * scale * sx + 'px';
             ctx.textBaseline = 'middle';
             ctx.globalAlpha = alpha;
             ctx.fillStyle = fg;
-            ctx.fillText(text, (r.left + r.width / 2) * sx, (r.top + r.height / 2) * sx);
+            ctx.fillText(text, (align === 'left' ? r.left : r.left + r.width / 2) * sx, (r.top + r.height / 2) * sx);
         };
         const rootStyle = getComputedStyle(document.documentElement);
         const textOp = parseFloat(rootStyle.getPropertyValue('--text-opacity')) || 1;
@@ -676,6 +824,31 @@ const DitherWave = {
         drawText(document.getElementById('clock-time'), hm.textContent + document.getElementById('clock-seconds').textContent, clockOp);
         const date = document.getElementById('clock-date');
         drawText(date, date.textContent, clockOp * 0.85);
+
+        // A caixinha de música: fundo, borda, capa e textos principais.
+        const box = document.getElementById('now-playing');
+        if (!DitherFade.isHidden(box)) {
+            const r = box.getBoundingClientRect();
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = '#' + Wallpaper.bgThree.getHexString();
+            ctx.fillRect(r.left * sx, r.top * sx, r.width * sx, r.height * sx);
+            ctx.globalAlpha = 0.35;
+            ctx.strokeStyle = fg; ctx.lineWidth = 1;
+            ctx.strokeRect(r.left * sx + 0.5, r.top * sx + 0.5, r.width * sx - 1, r.height * sx - 1);
+            ctx.globalAlpha = 1;
+            const art = document.getElementById('np-art'), ar = art.getBoundingClientRect();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(art, ar.left * sx, ar.top * sx, ar.width * sx, ar.height * sx);
+            ctx.imageSmoothingEnabled = true;
+            const mini = document.getElementById('np-mini-canvas'), mr = mini.getBoundingClientRect();
+            ctx.drawImage(mini, mr.left * sx, mr.top * sx, mr.width * sx, mr.height * sx);
+            const label = document.getElementById('np-status');
+            drawText(label, label.textContent.toUpperCase(), 0.9, 'left');
+            for (const id of ['np-title', 'np-artist', 'np-time']) {
+                const el = document.getElementById(id);
+                drawText(el, el.textContent, id === 'np-artist' ? 0.75 : 1, 'left');
+            }
+        }
         ctx.globalAlpha = 1;
     },
 
@@ -752,11 +925,355 @@ const DitherWave = {
     },
 };
 
+/*
+ * DITHERFADE: entrada e saída de elementos do DOM por dither ordenado.
+ *
+ * Usa a mesma matriz de Bayer 4×4 da onda (e do Playground do portfólio)
+ * como máscara CSS: para cada nível de 0 a 16 existe um ladrilho onde só as
+ * células com valor da matriz abaixo do nível ficam opacas. Subir o nível
+ * de 0 a 16 faz o elemento aparecer ponto a ponto, na ordem da matriz;
+ * descer faz ele se desfazer do mesmo jeito. Durante a transição, a fase do
+ * ladrilho muda a cada 175 ms, como a cintilação do portfólio.
+ */
+const DitherFade = {
+    DURATION: 560,
+    tiles: [],
+    cell: 0,
+    running: new Map(),
+
+    buildTiles() {
+        const cell = DitherWave.pixelSize;
+        if (cell === this.cell && this.tiles.length) return;
+        this.cell = cell;
+        const size = DitherWave.MATRIX_SIZE, matrix = DitherWave.buildBayer(size);
+        const c = document.createElement('canvas');
+        c.width = c.height = size * cell;
+        const ctx = c.getContext('2d');
+        this.tiles = [];
+        for (let level = 0; level <= size * size; level++) {
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.fillStyle = '#fff';
+            for (let y = 0; y < size; y++)
+                for (let x = 0; x < size; x++)
+                    if (matrix[y * size + x] < level) ctx.fillRect(x * cell, y * cell, cell, cell);
+            this.tiles.push(`url(${c.toDataURL()})`);
+        }
+    },
+
+    isHidden(el) { return el.style.visibility === 'hidden' || getComputedStyle(el).visibility === 'hidden'; },
+
+    applyLevel(el, level, phase) {
+        const max = this.tiles.length - 1;
+        if (level >= max) {
+            el.style.webkitMaskImage = el.style.maskImage = '';
+            el.style.visibility = 'visible';
+            return;
+        }
+        if (level <= 0) { el.style.visibility = 'hidden'; return; }
+        const tile = this.tiles[level], sizePx = DitherWave.MATRIX_SIZE * this.cell + 'px';
+        const pos = `${phase.x * this.cell}px ${phase.y * this.cell}px`;
+        el.style.visibility = 'visible';
+        el.style.webkitMaskImage = el.style.maskImage = tile;
+        el.style.webkitMaskSize = el.style.maskSize = `${sizePx} ${sizePx}`;
+        el.style.webkitMaskRepeat = el.style.maskRepeat = 'repeat';
+        el.style.webkitMaskPosition = el.style.maskPosition = pos;
+    },
+
+    // Leva o elemento até visível (true) ou escondido (false). Resolve quando termina.
+    set(el, visible, duration = this.DURATION) {
+        this.buildTiles();
+        const target = visible ? 1 : 0;
+        if (el.dataset.ditherTarget === String(target)) return this.running.get(el) || Promise.resolve();
+        el.dataset.ditherTarget = String(target);
+        const from = parseFloat(el.dataset.ditherLevel ?? (this.isHidden(el) ? 0 : 1));
+        const max = this.tiles.length - 1;
+        const promise = new Promise(resolve => {
+            const start = performance.now();
+            const total = Math.abs(target - from) * duration;
+            const step = now => {
+                if (el.dataset.ditherTarget !== String(target)) return resolve(); // outra transição assumiu
+                const k = total > 0 ? Math.min(1, (now - start) / total) : 1;
+                const lv = from + (target - from) * k;
+                el.dataset.ditherLevel = lv;
+                const phase = DitherWave.PHASES[Math.floor(now / DitherWave.STEP_MS) % DitherWave.PHASES.length];
+                this.applyLevel(el, Math.round(lv * max), phase);
+                if (k < 1) requestAnimationFrame(step); else resolve();
+            };
+            requestAnimationFrame(step);
+        });
+        this.running.set(el, promise);
+        return promise;
+    },
+};
+
+/*
+ * TOCANDO AGORA
+ *
+ * Lê a música que o computador está tocando pela integração de mídia do
+ * Wallpaper Engine (Spotify, Tidal, navegador... qualquer app que apareça
+ * no controle de mídia do Windows). Enquanto ela toca, a cada pulso de
+ * dither o "GANWALK" vira o reprodutor logo antes da onda sair do
+ * icosaedro, e volta logo depois que ela passa. O reprodutor tem capa,
+ * título, artista, progresso e as três ondas do mini canvas da Exp I.
+ * Música nova (ou o começo de uma) também dispara um pulso.
+ *
+ * Toda troca (texto ↔ reprodutor, música nova, pausa) passa pelo DitherFade.
+ * A capa também passa pelo dither do portfólio (ditherFrame), cintilando.
+ */
+const NowPlaying = {
+    enabled: true,
+    boxSize: 1,
+    showProgress: true,
+
+    media: { title: '', artist: '', album: '', state: 0, position: 0, duration: 0, posAt: 0, hasTimeline: false },
+    thumb: null,       // Image da capa
+    playing: false,
+    showing: 'text',   // o que ocupa o centro agora: 'text' | 'box'
+    stopTimer: null,
+    busy: Promise.resolve(),
+    artPhase: 0, artLastStep: 0,
+
+    PLAYING() { const w = window.wallpaperMediaIntegration; return w ? w.PLAYBACK_PLAYING : 1; },
+
+    register() {
+        if (typeof window.wallpaperRegisterMediaPropertiesListener !== 'function') return false;
+        window.wallpaperRegisterMediaPropertiesListener(e => this.onProperties(e));
+        window.wallpaperRegisterMediaThumbnailListener(e => this.onThumbnail(e));
+        window.wallpaperRegisterMediaPlaybackListener(e => this.onPlayback(e));
+        if (typeof window.wallpaperRegisterMediaTimelineListener === 'function')
+            window.wallpaperRegisterMediaTimelineListener(e => this.onTimeline(e));
+        if (typeof window.wallpaperRegisterMediaStatusListener === 'function')
+            window.wallpaperRegisterMediaStatusListener(e => { if (!e.enabled) this.onPlayback({ state: 0 }); });
+        return true;
+    },
+
+    onProperties(e) {
+        const changed = e.title !== this.media.title || e.artist !== this.media.artist;
+        this.media.title = e.title || '';
+        this.media.artist = e.artist || '';
+        this.media.album = e.albumTitle || '';
+        if (changed) { this.media.hasTimeline = false; this.trackChanged(); }
+    },
+    onThumbnail(e) {
+        if (!e.thumbnail) { this.thumb = null; return; }
+        const img = new Image();
+        img.onload = () => { this.thumb = img; };
+        img.src = e.thumbnail;
+    },
+    onPlayback(e) {
+        this.media.state = e.state;
+        this.media.posAt = performance.now();
+        this.update();
+    },
+    onTimeline(e) {
+        this.media.position = e.position;
+        this.media.duration = e.duration;
+        this.media.posAt = performance.now();
+        this.media.hasTimeline = e.duration > 0;
+    },
+
+    isPlaying() { return this.enabled && this.media.state === this.PLAYING() && !!this.media.title; },
+
+    // Reavalia o estado (música tocando ou não, configurações mudaram).
+    update() {
+        const text = document.getElementById('main-text');
+        const box = document.getElementById('now-playing');
+        const showText = Wallpaper.settings.showText;
+        const playing = this.isPlaying();
+
+        if (playing) {
+            clearTimeout(this.stopTimer); this.stopTimer = null;
+            if (!this.playing) {
+                this.playing = true;
+                this.fillBox();
+                // A música começou: um pulso apresenta o reprodutor.
+                if (showText) DitherWave.request(); else this.swapTo('box');
+            } else if (!showText && this.showing !== 'box') this.swapTo('box');
+            else if (showText && this.showing === 'box' && !this.inPulse) this.swapTo('text');
+            return;
+        }
+        // Pausou ou parou: espera um pouco (troca de faixa às vezes passa por
+        // "parado" por um instante) e então devolve o centro ao texto.
+        if (this.playing && !this.stopTimer) {
+            this.stopTimer = setTimeout(() => {
+                this.stopTimer = null;
+                if (this.isPlaying()) return;
+                this.playing = false;
+                clearTimeout(this.holdTimer);
+                this.swapTo('text');
+            }, 1500);
+        }
+        if (!this.playing && !this.stopTimer) {
+            DitherFade.set(box, false);
+            DitherFade.set(text, showText);
+            this.showing = 'text';
+        }
+    },
+
+    trackChanged() {
+        if (!this.isPlaying()) return;
+        if (!this.playing) { this.update(); return; }
+        if (this.showing === 'box' && !Wallpaper.settings.showText) {
+            this.swapTo('box', true); // reprodutor fixo: troca a faixa em dither
+        } else {
+            this.fillBox();
+            DitherWave.request(); // música nova: um pulso apresenta a faixa
+        }
+    },
+
+    // O pulso só troca o centro quando há música e o "GANWALK" está à mostra.
+    wantsSwap() {
+        return this.playing && this.isPlaying() && Wallpaper.settings.showText && this.showing === 'text';
+    },
+
+    inPulse: false,
+    holdTimer: null,
+    holdAfter: 0.6, // segundos que o reprodutor fica depois que a onda passa
+
+    beforePulse() {
+        this.inPulse = true;
+        clearTimeout(this.holdTimer);
+        return this.swapTo('box', false, 260);
+    },
+
+    afterPulse() {
+        if (!this.inPulse) return;
+        clearTimeout(this.holdTimer);
+        this.holdTimer = setTimeout(() => {
+            this.inPulse = false;
+            if (Wallpaper.settings.showText || !this.playing) this.swapTo('text');
+        }, this.holdAfter * 1000);
+    },
+
+    swapTo(target, refresh = false, dur = DitherFade.DURATION) {
+        this.busy = this.busy.then(async () => {
+            const text = document.getElementById('main-text');
+            const box = document.getElementById('now-playing');
+            const showText = Wallpaper.settings.showText;
+            if (target === 'box' && !this.playing) return; // música já parou
+            const out = this.showing === 'box' ? box : text;
+            if (this.showing !== target || refresh) await DitherFade.set(out, false, dur);
+            if (target === 'box') this.fillBox();
+            this.showing = target;
+            if (target === 'box') await DitherFade.set(box, true, dur);
+            else await DitherFade.set(text, showText, dur);
+        });
+        return this.busy;
+    },
+
+    fillBox() {
+        document.getElementById('np-title').textContent = this.media.title;
+        const sub = [this.media.artist, this.media.album].filter(Boolean).join(' · ');
+        document.getElementById('np-artist').textContent = sub;
+    },
+
+    fmt(s) { s = Math.max(0, s); return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`; },
+
+    // Chamado a cada quadro pelo Wallpaper.animate.
+    frame(b, m, h, t, dir) {
+        const box = document.getElementById('now-playing');
+        const root = document.documentElement.style;
+        root.setProperty('--np-scale', (window.innerWidth / 1920 * this.boxSize).toFixed(4));
+        if (DitherFade.isHidden(box)) return;
+        // A caixinha respira com o grave, como o "GANWALK".
+        root.setProperty('--np-pulse', (1 + b * 0.04).toFixed(4));
+
+        // Progresso: interpola entre os avisos do Wallpaper Engine.
+        const md = this.media, prog = document.getElementById('np-progress');
+        const hasTl = this.showProgress && md.hasTimeline;
+        prog.classList.toggle('hidden', !hasTl);
+        if (hasTl) {
+            const pos = Math.min(md.duration, md.position + (md.state === this.PLAYING() ? (performance.now() - md.posAt) / 1000 : 0));
+            document.getElementById('np-fill').style.width = (pos / md.duration * 100) + '%';
+            document.getElementById('np-time').textContent = `${this.fmt(pos)} / ${this.fmt(md.duration)}`;
+        }
+
+        this.drawArt();
+        this.drawMini(b, m, h, t, dir);
+    },
+
+    // Capa com o mesmo motor do portfólio (ditherFrame): recorte object-cover,
+    // luminância Rec. 601, viés de 42 e fase trocando a cada 175 ms.
+    drawArt() {
+        const now = performance.now();
+        if (now - this.artLastStep < DitherWave.STEP_MS) return;
+        this.artLastStep = now;
+        this.artPhase = (this.artPhase + 1) % DitherWave.PHASES.length;
+        const cvs = document.getElementById('np-art'), ctx = cvs.getContext('2d', { willReadFrequently: true });
+        const W = cvs.width, H = cvs.height;
+        const fg = Wallpaper.fgThree, bg = Wallpaper.bgThree;
+        if (this.thumb) {
+            const img = this.thumb, sr = img.naturalWidth / img.naturalHeight;
+            let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+            if (sr > 1) { sw = sh; sx = (img.naturalWidth - sw) / 2; } else if (sr < 1) { sh = sw; sy = (img.naturalHeight - sh) / 2; }
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+        } else {
+            // Sem capa: um degradê na cor de foco, que o dither transforma em retícula.
+            const g = ctx.createLinearGradient(0, 0, W, H);
+            g.addColorStop(0, '#' + fg.getHexString()); g.addColorStop(1, '#' + bg.getHexString());
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        }
+        const image = ctx.getImageData(0, 0, W, H), data = image.data;
+        const size = DitherWave.MATRIX_SIZE, mask = size - 1, matrix = DitherWave.buildBayer(size);
+        const scale255 = 255 / (size * size), phase = DitherWave.PHASES[this.artPhase];
+        const duo = DitherWave.mode === 'duotone';
+        for (let y = 0; y < H; y++) {
+            const row = ((y + phase.y) & mask) * size;
+            for (let x = 0; x < W; x++) {
+                const i = (y * W + x) * 4;
+                const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                const pass = lum >= matrix[row + ((x + phase.x) & mask)] * scale255 + DitherWave.BIAS;
+                if (duo) {
+                    const c = pass ? fg : bg;
+                    data[i] = c.r * 255; data[i + 1] = c.g * 255; data[i + 2] = c.b * 255;
+                } else if (!pass) { data[i] = 0; data[i + 1] = 0; data[i + 2] = 0; }
+                data[i + 3] = 255;
+            }
+        }
+        ctx.putImageData(image, 0, 0);
+    },
+
+    // As três ondas do mini canvas da Exp I (App1.drawMiniCanvas no site).
+    drawMini(b, m, h, time, dir) {
+        const mc = document.getElementById('np-mini-canvas');
+        const pw = mc.parentElement.clientWidth, ph = mc.parentElement.clientHeight;
+        if (mc.width !== pw || mc.height !== ph) { mc.width = pw; mc.height = ph; }
+        const ctx = mc.getContext('2d'), w = mc.width, hC = mc.height;
+        const fx = Wallpaper.fx, bg = Wallpaper.bgThree;
+        ctx.clearRect(0, 0, w, hC);
+        ctx.fillStyle = `rgba(${bg.r * 255},${bg.g * 255},${bg.b * 255},${0.02 + 0.98 * Math.pow(1.0 - fx.reverb, 3)})`;
+        const col = '#' + Wallpaper.fgThree.getHexString();
+        const alpha = Math.max(0, ((100 - fx.filter) / 100)) * 0.8;
+        ctx.lineWidth = 1 + fx.overdrive * 2;
+        const vShift = Math.sin(time * 2) * fx.chorus * 10;
+        const draw = (amp, freq, spd, yOff) => {
+            ctx.beginPath(); ctx.strokeStyle = col; ctx.globalAlpha = alpha;
+            for (let x = 0; x < w; x++) {
+                const y = yOff + Math.sin(((x / w - 0.5) * 4) * freq + time * spd * dir) * (amp * 20) + vShift + (Math.random() - 0.5) * fx.overdrive * 3;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke(); ctx.globalAlpha = 1;
+        };
+        draw(b, 2.0, 5, hC / 2); draw(m, 3.0, 6, hC / 2); draw(h, 4.0, 7, hC / 2);
+    },
+
+    // Fora do Wallpaper Engine não há integração de mídia: uma faixa de
+    // exemplo deixa a caixinha visível no navegador.
+    demo() {
+        this.onProperties({ title: 'calma', artist: 'GANWALK', albumTitle: '2026' });
+        this.onTimeline({ position: 42, duration: 213 });
+        this.onPlayback({ state: 1 });
+    },
+};
+
 Wallpaper.bloomBase = 0;
 
+// A integração de mídia tem que ser registrada logo, não depois do load.
+const hasMedia = NowPlaying.register();
 DitherWave.init();
 Wallpaper.init();
 Wallpaper.applyVisibility();
+if (!hasMedia && Wallpaper.demoMode) setTimeout(() => NowPlaying.demo(), 2500);
 </script>
 </body>
 </html>

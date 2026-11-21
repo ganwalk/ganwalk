@@ -336,21 +336,30 @@
 				"type": "bool",
 				"value": true
 			},
+			"taskbar": {
+				"text": "Altura da barra de tarefas (px)",
+				"type": "slider",
+				"min": 0,
+				"max": 120,
+				"value": 48,
+				"condition": "showwaves.value == true",
+				"order": 36
+			},
 			"showtext": {
-				"order": 36,
+				"order": 37,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 37,
+				"order": 38,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 38,
+				"order": 39,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -359,7 +368,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textopacity": {
-				"order": 39,
+				"order": 40,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -370,14 +379,49 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 40,
+				"order": 41,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
 				"condition": "showtext.value == true"
 			},
+			"npenabled": {
+				"text": "Mostrar a música tocando (troca com o texto no pulso)",
+				"type": "bool",
+				"value": true,
+				"order": 42
+			},
+			"npholdafter": {
+				"text": "Tempo do reprodutor após o pulso (s)",
+				"type": "slider",
+				"min": 0,
+				"max": 8,
+				"value": 0.6,
+				"fraction": true,
+				"precision": 1,
+				"condition": "npenabled.value == true",
+				"order": 43
+			},
+			"npsize": {
+				"text": "Tamanho do reprodutor",
+				"type": "slider",
+				"min": 0.5,
+				"max": 2,
+				"value": 1,
+				"fraction": true,
+				"precision": 2,
+				"condition": "npenabled.value == true",
+				"order": 44
+			},
+			"npprogress": {
+				"text": "Mostrar barra de progresso",
+				"type": "bool",
+				"value": true,
+				"condition": "npenabled.value == true",
+				"order": 45
+			},
 			"quality": {
-				"order": 41,
+				"order": 46,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",
