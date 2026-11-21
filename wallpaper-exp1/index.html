@@ -157,6 +157,26 @@
     }
     #clock-date.hidden { display: none; }
 
+    /* --- FAIXA DE BAIXO: LINHAS OU INFORMAÇÕES DO PC --- */
+    #waves { position: absolute; left: 0; width: 100%; z-index: 1; pointer-events: none; visibility: hidden; }
+    #sys-panel {
+        position: absolute; left: 50%; transform: translate(-50%, -50%) scale(var(--np-scale));
+        width: 1040px; z-index: 1; pointer-events: none; visibility: hidden;
+        display: flex; justify-content: space-between; gap: 36px;
+        color: var(--highlight-color); font-family: 'Inter', sans-serif;
+    }
+    .sys-item { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .sys-label {
+        font-family: 'Silkscreen', monospace; font-size: 11px; letter-spacing: 0.5px;
+        text-transform: uppercase; opacity: 0.85; white-space: nowrap;
+    }
+    .sys-value {
+        font-size: 22px; font-weight: 300; white-space: nowrap;
+        text-shadow: 0 0 10px rgba(var(--highlight-rgb), 0.45);
+    }
+    .sys-sub { font-size: 12px; opacity: 0.6; white-space: nowrap; }
+    .sys-bar { width: 100%; height: 10px; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+
     /* --- ONDA DE DITHER --- */
     /* Canvas em baixa resolução esticado sem suavização: cada célula do
        retículo vira um bloco nítido de N×N pixels na tela. */
@@ -187,6 +207,8 @@
         </div>
     </div>
     <canvas id="canvas"></canvas>
+    <canvas id="waves"></canvas>
+    <div id="sys-panel"></div>
     <canvas id="dither"></canvas>
 </div>
 
@@ -208,7 +230,7 @@
 const Wallpaper = {
     scene: null, camera: null, renderer: null, composer: null, bloomPass: null,
     fadeScene: null, fadeCamera: null, fadeMesh: null,
-    visualGroup: null, centralShape: null, gridLines: [], waveLines: [], waveLinesGroup: null,
+    visualGroup: null, centralShape: null, gridLines: [],
     raycaster: new THREE.Raycaster(), mouse: new THREE.Vector2(),
     prevMouse: { x: 0, y: 0 }, dragBurst: 0,
 
@@ -331,7 +353,10 @@ const Wallpaper = {
         this.fadeMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: this.bgThree, transparent: true, opacity: 1.0 }));
         this.fadeScene.add(this.fadeMesh);
 
-        this.visualGroup = new THREE.Group(); this.visualGroup.position.y = 12; this.root.add(this.visualGroup);
+        // followGroup: segue o mouse (desloca e vira na direção do cursor).
+        // visualGroup: o giro contínuo do site, dentro dele.
+        this.followGroup = new THREE.Group(); this.followGroup.position.y = 12; this.root.add(this.followGroup);
+        this.visualGroup = new THREE.Group(); this.followGroup.add(this.visualGroup);
         this.centralShape = new THREE.Mesh(new THREE.IcosahedronGeometry(8, 0), new THREE.MeshBasicMaterial({ color: this.fgThree, wireframe: true, transparent: true, opacity: 1 }));
         this.visualGroup.add(this.centralShape);
 
@@ -346,13 +371,8 @@ const Wallpaper = {
             l = new THREE.Line(g, lm.clone()); gridGroup.add(l); this.gridLines.push(l);
         }
 
-        // No site, com o menu recolhido, as ondas sobem para y=-12 e esticam 4x.
-        this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -20; this.root.add(this.waveLinesGroup);
-        for (let k = -1; k <= 1; k++) {
-            const pts = []; for (let j = 0; j <= 400; j++) pts.push(new THREE.Vector3((j / 400 - 0.5) * 70, k, 0));
-            const g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
-            const l = new THREE.Line(g, lm.clone()); this.waveLinesGroup.add(l); this.waveLines.push(l);
-        }
+        // As três linhas não ficam mais no WebGL: são desenhadas no canvas 2D
+        // #waves (ver drawWaves), para poderem entrar e sair em dither.
 
         window.addEventListener('resize', () => this.onResize());
     },
@@ -380,8 +400,8 @@ const Wallpaper = {
         this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         const k = this.mouseFollow;
-        this.mouseSpin.y += dx * 0.0004 * k;
-        this.mouseSpin.x += dy * 0.0004 * k;
+        this.mouseSpin.y += dx * 0.0009 * k;
+        this.mouseSpin.x += dy * 0.0009 * k;
         this.dragBurst = Math.max(this.dragBurst, Math.min(1, Math.abs(dx) * 0.02 * k));
     },
 
@@ -421,11 +441,16 @@ const Wallpaper = {
         this.centralShape.rotation.y += (0.005 * idle + m * 0.02) * dir + this.mouseSpin.y;
         // Inércia do giro e inclinação suave em direção ao cursor.
         this.mouseSpin.x *= 0.92; this.mouseSpin.y *= 0.92;
-        const tk = 0.35 * this.mouseFollow;
-        this.mouseTilt.x += (-this.mouse.y * tk - this.mouseTilt.x) * 0.06;
-        this.mouseTilt.y += (this.mouse.x * tk - this.mouseTilt.y) * 0.06;
-        this.visualGroup.rotation.x = this.mouseTilt.x;
-        this.visualGroup.rotation.z = -this.mouseTilt.y * 0.3;
+        // Segue o cursor: o icosaedro desliza na direção dele, vira de frente
+        // para ele e se inclina, com uma mola suave (sem precisar clicar).
+        const f = this.mouseFollow;
+        this.mouseTilt.x += (-this.mouse.y * 0.9 * f - this.mouseTilt.x) * 0.08;
+        this.mouseTilt.y += (this.mouse.x * 0.9 * f - this.mouseTilt.y) * 0.08;
+        this.followGroup.rotation.x = this.mouseTilt.x;
+        this.followGroup.rotation.y = this.mouseTilt.y;
+        this.followGroup.rotation.z = -this.mouseTilt.y * 0.25;
+        this.followGroup.position.x += (this.mouse.x * 7 * f - this.followGroup.position.x) * 0.06;
+        this.followGroup.position.y += (12 + this.mouse.y * 4 * f - this.followGroup.position.y) * 0.06;
         this.centralShape.rotation.z += cVal * 0.05 * dir;
         this.centralShape.scale.set(1 + b * 0.5 + odVal * 0.5, 1 + b * 0.5 - odVal * 0.5, 1 + b * 0.5 + odVal * 0.5);
 
@@ -443,29 +468,9 @@ const Wallpaper = {
             });
         }
 
-        if (this.settings.showWaves) {
-            const gap = this.layoutWaves();
-            // Mesma fórmula do site (frequência, velocidade e proporção 45/20/15
-            // entre grave, médio e agudo), mas a onda agora sobe e desce no
-            // plano da tela em vez de vir em direção à câmera: assim a largura
-            // na tela é exatamente a do reprodutor, sem a perspectiva esticar.
-            const amp = gap * 0.32;
-            // O grupo é esticado na horizontal; o x em unidades do mundo mantém
-            // o comprimento de onda do site, então cabem mais ondas na tela.
-            const sx = this.waveLinesGroup.scale.x;
-            this.waveLines.forEach((l, idx) => {
-                const pos = l.geometry.attributes.position.array;
-                const band = idx === 0 ? b : (idx === 1 ? m : h);
-                const baseY = (idx - 1) * gap * 0.08;
-                const k = idx === 0 ? 1 : (idx === 1 ? 20 / 45 : 15 / 45);
-                for (let i = 0; i < pos.length; i += 3) {
-                    pos[i + 1] = baseY + Math.sin(pos[i] * sx * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * amp * k;
-                    pos[i + 2] = 0;
-                }
-                l.geometry.attributes.position.needsUpdate = true;
-                l.material.opacity = Math.min(1, 0.5 + band * 0.5);
-            });
-        }
+        this.layoutLower();
+        this.drawWaves(b, m, h, t, dir);
+        SysStats.frame(t);
 
         this.renderer.render(this.fadeScene, this.fadeCamera);
         this.renderer.clearDepth();
@@ -490,33 +495,62 @@ const Wallpaper = {
     textDrop: 4, // % da altura da tela que o "GANWALK" (e o reprodutor) desce, sem mexer nas linhas
     textDropPx() { return this.textDrop / 100 * window.innerHeight; },
 
-    // As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor,
-    // o que for mais baixo) e a barra de tarefas, de fora a fora na tela.
-    // Devolve a altura do vão em unidades da cena.
-    layoutWaves() {
+    // Faixa de baixo: o vão entre o "GANWALK" (ou o reprodutor, o que for
+    // mais baixo) e a barra de tarefas. Ali ficam as três linhas ou, sem
+    // música, o painel com as informações do PC.
+    lower: { mid: 0, gap: 0 },
+    layoutLower() {
         const H = window.innerHeight;
-        const unitsPerPx = 100 * Math.tan(THREE.MathUtils.degToRad(37.5)) / H; // altura visível em z=0 / altura da tela
-        // As linhas são calculadas a partir da posição do texto ANTES do
-        // "Descer o GANWALK", para ficarem no mesmo lugar quando ele desce.
+        // Calculado com o texto ANTES do "Descer o GANWALK", para a faixa não
+        // mudar de lugar quando ele desce.
         const r = document.getElementById('slot').getBoundingClientRect(), drop = this.textDropPx();
         const slot = { top: r.top - drop, bottom: r.bottom - drop, height: r.height };
         const box = document.getElementById('now-playing');
         const npScale = window.innerWidth / 1920 * NowPlaying.boxSize;
         const slotMid = slot.top + slot.height / 2;
-        const textBottom = slot.bottom;
-        const boxBottom = slotMid + box.offsetHeight * npScale / 2;
-        const top = Math.max(textBottom, boxBottom);
+        const top = Math.max(slot.bottom, slotMid + box.offsetHeight * npScale / 2);
         const bottom = H - this.taskbarPx;
-        const midPx = (top + bottom) / 2;
-        const gapPx = Math.max(20, bottom - top);
-        // Tela → mundo (câmera em y=0), depois → local do grupo raiz (que desce sceneOffset).
-        const worldY = (H / 2 - midPx) * unitsPerPx;
-        this.waveLinesGroup.position.y = worldY - this.root.position.y;
-        // As linhas vão de -35 a 35 (70 unidades): escala para a largura do reprodutor.
-        // De fora a fora na tela.
-        const widthUnits = window.innerWidth * unitsPerPx;
-        this.waveLinesGroup.scale.set(widthUnits / 70, 1, 1);
-        return gapPx * unitsPerPx;
+        this.lower.mid = (top + bottom) / 2;
+        this.lower.gap = Math.max(20, bottom - top);
+        const waves = document.getElementById('waves');
+        waves.style.top = (this.lower.mid - this.lower.gap / 2) + 'px';
+        waves.style.height = this.lower.gap + 'px';
+        const panel = document.getElementById('sys-panel');
+        panel.style.top = this.lower.mid + 'px';
+    },
+
+    // As três linhas: mesma fórmula do site (frequência, velocidade e a
+    // proporção 45/20/15 entre grave, médio e agudo), subindo e descendo no
+    // plano da tela, de fora a fora. O x entra em unidades da cena (como no
+    // WebGL), então o comprimento de onda continua o do site.
+    drawWaves(b, m, h, t, dir) {
+        const cvs = document.getElementById('waves');
+        if (DitherFade.isHidden(cvs)) return;
+        const dpr = window.devicePixelRatio || 1;
+        const W = window.innerWidth, Hc = this.lower.gap;
+        if (cvs.width !== Math.round(W * dpr) || cvs.height !== Math.round(Hc * dpr)) {
+            cvs.width = Math.round(W * dpr); cvs.height = Math.round(Hc * dpr);
+        }
+        const ctx = cvs.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, Hc);
+        const unitsPerPx = 100 * Math.tan(THREE.MathUtils.degToRad(37.5)) / window.innerHeight;
+        const amp = Hc * 0.32, col = '#' + this.fgThree.getHexString();
+        ctx.strokeStyle = col; ctx.lineWidth = 1;
+        ctx.shadowColor = col; ctx.shadowBlur = 6; // o brilho que o bloom dava
+        [b, m, h].forEach((band, idx) => {
+            const k = idx === 0 ? 1 : (idx === 1 ? 20 / 45 : 15 / 45);
+            const baseY = Hc / 2 - (idx - 1) * Hc * 0.08;
+            ctx.globalAlpha = Math.min(1, 0.5 + band * 0.5);
+            ctx.beginPath();
+            for (let x = 0; x <= W; x += 2) {
+                const xu = (x - W / 2) * unitsPerPx;
+                const y = baseY - Math.sin(xu * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * amp * k;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        });
+        ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     },
 
     // Desce a cena 3D e o texto juntos. Com a câmera em z=50 e FOV 75, a altura
@@ -558,7 +592,6 @@ const Wallpaper = {
         document.documentElement.style.setProperty('--border-color', `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, 0.3)`);
         this.centralShape.material.color.copy(c);
         this.gridLines.forEach(l => l.material.color.copy(c));
-        this.waveLines.forEach(l => l.material.color.copy(c));
     },
     applyVisibility() {
         const s = this.settings;
@@ -566,7 +599,6 @@ const Wallpaper = {
         // "Véu Sonoro" no site apagava a grade junto com o filtro passa-baixa.
         const gridOpacity = ((100 - this.fx.filter) / 100) * 0.6;
         this.gridLines.forEach(l => { l.visible = s.showGrid; l.material.opacity = gridOpacity; });
-        this.waveLines.forEach(l => { l.visible = s.showWaves; });
         document.getElementById('main-text').classList.toggle('no-glow', !s.textGlow);
         const clock = document.getElementById('clock');
         clock.classList.toggle('no-glow', !s.clockGlow);
@@ -574,6 +606,7 @@ const Wallpaper = {
         DitherFade.set(clock, s.showClock);
         DitherFade.set(document.getElementById('clock-date'), s.showClock && s.showDate);
         NowPlaying.update();
+        SysStats.apply();
         this.applyOffset();
         this.updateClock();
     },
@@ -645,6 +678,8 @@ window.wallpaperPropertyListener = {
         if (p.taskbar) W.taskbarPx = p.taskbar.value;
         if (p.mousefollow) W.mouseFollow = p.mousefollow.value;
         if (p.textdrop) W.textDrop = p.textdrop.value;
+        if (p.sysenabled) { SysStats.enabled = p.sysenabled.value; SysStats.poll(); }
+        if (p.sysport) { SysStats.port = p.sysport.value; SysStats.poll(); }
         if (p.ditherbasssens) D.bassSensitivity = p.ditherbasssens.value;
         if (p.ditherbasscooldown) D.bassCooldownMs = p.ditherbasscooldown.value * 1000;
 
@@ -861,6 +896,20 @@ const DitherWave = {
         drawText(document.getElementById('clock-time'), hm.textContent + document.getElementById('clock-seconds').textContent, clockOp);
         const date = document.getElementById('clock-date');
         drawText(date, date.textContent, clockOp * 0.85);
+
+        // A faixa de baixo: as linhas (canvas) ou o painel do PC.
+        const waves = document.getElementById('waves');
+        if (!DitherFade.isHidden(waves)) {
+            const wr = waves.getBoundingClientRect();
+            ctx.drawImage(waves, wr.left * sx, wr.top * sx, wr.width * sx, wr.height * sx);
+        }
+        const sysPanel = document.getElementById('sys-panel');
+        if (!DitherFade.isHidden(sysPanel)) {
+            sysPanel.querySelectorAll('[data-k]').forEach(el => drawText(el, el.textContent, el.dataset.k === 'sub' ? 0.6 : 1, 'left'));
+            ctx.imageSmoothingEnabled = false;
+            sysPanel.querySelectorAll('canvas.sys-bar').forEach(c => { const cr = c.getBoundingClientRect(); ctx.drawImage(c, cr.left * sx, cr.top * sx, cr.width * sx, cr.height * sx); });
+            ctx.imageSmoothingEnabled = true;
+        }
 
         // A caixinha de música: fundo, borda, capa e textos principais.
         const box = document.getElementById('now-playing');
@@ -1123,7 +1172,7 @@ const NowPlaying = {
 
         if (playing) {
             clearTimeout(this.stopTimer); this.stopTimer = null;
-            if (!this.playing) { this.playing = true; this.fillBox(); this.swapTo('box'); }
+            if (!this.playing) { this.playing = true; this.fillBox(); this.swapTo('box'); SysStats.apply(); }
             else if (this.showing !== 'box' && !this.inPulse) this.swapTo('box');
             return;
         }
@@ -1137,6 +1186,7 @@ const NowPlaying = {
                 this.inPulse = false;
                 clearTimeout(this.holdTimer);
                 this.swapTo('text');
+                SysStats.apply();
             }, 1500);
         }
         if (!this.playing && !this.stopTimer) {
@@ -1359,6 +1409,119 @@ const NowPlaying = {
     },
 };
 
+/*
+ * INFORMAÇÕES DO PC
+ *
+ * Um wallpaper web não tem acesso ao disco, à memória nem ao processador.
+ * Quem lê isso é o script stats/ganwalk-stats.ps1, rodando no próprio PC:
+ * ele responde só em http://localhost (porta 7457 por padrão) com um JSON
+ * pequeno, e o wallpaper consulta a cada 3 s. Sem o script, nada muda: as
+ * três linhas continuam no lugar.
+ *
+ * Sem música tocando, o painel ocupa o lugar das três linhas; com música,
+ * as linhas voltam. A troca é em dither, como todas as outras. As barras de
+ * uso são preenchidas com a mesma matriz de Bayer, cintilando.
+ */
+const SysStats = {
+    enabled: true,
+    port: 7457,
+    data: null, lastOk: 0, timer: null, built: '',
+
+    init() {
+        this.poll();
+        this.timer = setInterval(() => this.poll(), 3000);
+    },
+
+    async poll() {
+        if (!this.enabled) { this.apply(); return; }
+        const ctl = new AbortController();
+        const to = setTimeout(() => ctl.abort(), 1500);
+        try {
+            const res = await fetch(`http://localhost:${this.port}/stats`, { signal: ctl.signal, cache: 'no-store' });
+            if (res.ok) { this.data = await res.json(); this.lastOk = performance.now(); this.render(); }
+        } catch (e) { /* script desligado: segue com as linhas */ }
+        clearTimeout(to);
+        this.apply();
+    },
+
+    available() { return this.enabled && this.data && performance.now() - this.lastOk < 10000; },
+
+    // Decide o que ocupa a faixa de baixo e troca em dither.
+    apply() {
+        const panel = this.available() && !NowPlaying.playing;
+        DitherFade.set(document.getElementById('sys-panel'), panel);
+        DitherFade.set(document.getElementById('waves'), Wallpaper.settings.showWaves && !panel);
+    },
+
+    fmtGB(gb) { return gb >= 1000 ? (gb / 1024).toFixed(1).replace('.', ',') + ' TB' : Math.round(gb) + ' GB'; },
+    fmtUptime(sec) {
+        const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+        return d > 0 ? `${d}d ${h}h` : `${h}h ${String(m).padStart(2, '0')}min`;
+    },
+
+    // Monta os itens: processador, memória, até 3 discos e tempo ligado.
+    items() {
+        const d = this.data, out = [];
+        if (typeof d.cpu === 'number') out.push({ label: 'Processador', value: `${d.cpu}%`, sub: 'em uso', use: d.cpu / 100 });
+        if (d.ramTotalGB) {
+            const used = d.ramTotalGB - d.ramFreeGB;
+            out.push({ label: 'Memória', value: `${used.toFixed(1).replace('.', ',')} GB`, sub: `de ${Math.round(d.ramTotalGB)} GB`, use: used / d.ramTotalGB });
+        }
+        (d.disks || []).slice(0, 3).forEach(k => {
+            out.push({ label: `Disco ${k.name}`, value: `${this.fmtGB(k.freeGB)} livres`, sub: `de ${this.fmtGB(k.totalGB)}`, use: 1 - k.freeGB / k.totalGB });
+        });
+        if (d.uptimeSec) out.push({ label: 'Ligado há', value: this.fmtUptime(d.uptimeSec), sub: 'desde o último boot', use: null });
+        return out;
+    },
+
+    render() {
+        const panel = document.getElementById('sys-panel');
+        const items = this.items();
+        const sig = items.map(i => i.label).join('|');
+        if (sig !== this.built) {
+            panel.innerHTML = items.map((_, i) => `
+                <div class="sys-item">
+                    <div class="sys-label" data-i="${i}" data-k="label"></div>
+                    <div class="sys-value" data-i="${i}" data-k="value"></div>
+                    <div class="sys-sub" data-i="${i}" data-k="sub"></div>
+                    <canvas class="sys-bar" data-i="${i}" width="120" height="5"></canvas>
+                </div>`).join('');
+            this.built = sig;
+        }
+        this.current = items;
+        panel.querySelectorAll('[data-k]').forEach(el => { el.textContent = items[+el.dataset.i][el.dataset.k]; });
+    },
+
+    // Barras de uso em dither (cheias até o uso, com a fase trocando a cada 175 ms).
+    frame(t) {
+        const panel = document.getElementById('sys-panel');
+        if (!this.current || DitherFade.isHidden(panel)) return;
+        const size = DitherWave.MATRIX_SIZE, mask = size - 1, matrix = DitherWave.buildBayer(size), levels = size * size;
+        const phase = DitherWave.PHASES[Math.floor(performance.now() / DitherWave.STEP_MS) % DitherWave.PHASES.length];
+        const fg = Wallpaper.fgThree, R = fg.r * 255, G = fg.g * 255, B = fg.b * 255;
+        panel.querySelectorAll('canvas.sys-bar').forEach(cvs => {
+            const it = this.current[+cvs.dataset.i];
+            const ctx = cvs.getContext('2d'), W = cvs.width, H = cvs.height;
+            const img = ctx.createImageData(W, H), d = img.data;
+            const use = it.use == null ? null : Math.max(0, Math.min(1, it.use));
+            for (let y = 0; y < H; y++) {
+                const row = ((y + phase.y) & mask) * size;
+                for (let x = 0; x < W; x++) {
+                    const f = x / W;
+                    // Trilho: retícula fraca (2/16). Preenchido: denso, ralo perto da ponta.
+                    let dens = 2 / levels;
+                    if (use == null) dens = 0.25 + 0.2 * Math.sin(t * 2 + x * 0.15); // tempo ligado: só um pulso suave
+                    else if (f < use) dens = 1 - 0.5 * (f / Math.max(0.001, use)) * (0.9 + 0.1 * Math.sin(t * 5));
+                    if (dens * levels > matrix[row + ((x + phase.x) & mask)]) {
+                        const o = (y * W + x) * 4; d[o] = R; d[o + 1] = G; d[o + 2] = B; d[o + 3] = 255;
+                    }
+                }
+            }
+            ctx.putImageData(img, 0, 0);
+        });
+    },
+};
+
 Wallpaper.bloomBase = 0;
 
 // A integração de mídia tem que ser registrada logo, não depois do load.
@@ -1366,6 +1529,7 @@ const hasMedia = NowPlaying.register();
 DitherWave.init();
 Wallpaper.init();
 Wallpaper.applyVisibility();
+SysStats.init();
 if (!hasMedia && Wallpaper.demoMode) setTimeout(() => NowPlaying.demo(), 2500);
 </script>
 </body>

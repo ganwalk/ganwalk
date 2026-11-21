@@ -365,21 +365,37 @@
 				"condition": "showwaves.value == true",
 				"order": 38
 			},
+			"sysenabled": {
+				"text": "Mostrar informações do PC sem música (precisa do script)",
+				"type": "bool",
+				"value": true,
+				"order": 39
+			},
+			"sysport": {
+				"text": "Porta do script de informações",
+				"type": "slider",
+				"min": 1024,
+				"max": 65535,
+				"value": 7457,
+				"editable": true,
+				"condition": "sysenabled.value == true",
+				"order": 40
+			},
 			"showtext": {
-				"order": 39,
+				"order": 41,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 40,
+				"order": 42,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 41,
+				"order": 43,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -395,10 +411,10 @@
 				"value": 4,
 				"fraction": true,
 				"precision": 1,
-				"order": 42
+				"order": 44
 			},
 			"textopacity": {
-				"order": 43,
+				"order": 45,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -409,7 +425,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 44,
+				"order": 46,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -419,10 +435,10 @@
 				"text": "Mostrar a música tocando (reprodutor no lugar do texto)",
 				"type": "bool",
 				"value": true,
-				"order": 45
+				"order": 47
 			},
 			"nptexthold": {
-				"order": 46,
+				"order": 48,
 				"text": "Tempo do GANWALK durante a música (s)",
 				"type": "slider",
 				"min": 1,
@@ -441,17 +457,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 47
+				"order": 49
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 48
+				"order": 50
 			},
 			"quality": {
-				"order": 49,
+				"order": 51,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",

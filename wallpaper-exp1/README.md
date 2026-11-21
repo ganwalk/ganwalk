@@ -59,6 +59,8 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Brilho extra (bloom) | Bloom fixo somado ao da Câmara Etérea. |
 | Mostrar icosaedro / grade / ondas / texto | Liga e desliga cada camada. |
 | Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, de fora a fora na tela. Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
+| Mostrar informações do PC sem música | Liga o painel de processador, memória, discos e tempo ligado no lugar das linhas quando não há música (precisa do script da pasta `stats/`). |
+| Porta do script de informações | A porta em que o script responde (7457 por padrão). |
 | Texto, tamanho, opacidade, brilho neon | Personaliza o "GANWALK" do centro. |
 | Descer o texto | Desce o "GANWALK" (e o reprodutor, que ocupa o mesmo lugar) sem mexer nas três linhas. 4% da altura da tela por padrão. |
 | Resolução de render | 100%, 75% ou 50%. Use 75% ou 50% em monitores 4K ou PCs mais fracos. |
@@ -93,10 +95,32 @@ em vez de ter uma borda lisa. Fora da onda, nada disso roda.
 
 ## Interação
 
-O icosaedro segue o mouse, sem precisar clicar: a velocidade do movimento vira giro
-(com inércia) e a posição do cursor inclina a forma na direção dele. Um movimento
-rápido na horizontal faz a forma inflar, como acontecia ao "arranhar" a música no
-site. A intensidade fica em "Icosaedro segue o mouse" (0 desliga).
+O icosaedro segue o mouse, sem precisar clicar: desliza na direção do cursor, vira de
+frente para ele e se inclina, com uma mola suave. A velocidade do movimento ainda
+vira giro (com inércia), e um movimento rápido na horizontal faz a forma inflar, como
+o "arranhar" da música no site. A intensidade fica em "Icosaedro segue o mouse"
+(0 desliga, 3 é o máximo).
+
+## Informações do PC (sem música)
+
+Quando nenhuma música está tocando, o lugar das três linhas mostra processador,
+memória, espaço livre dos discos e há quanto tempo o PC está ligado, com barras de
+uso em dither. Quando a música começa, as linhas voltam. A troca é em dither.
+
+Um wallpaper web não tem acesso ao disco, à memória nem ao processador, então quem
+lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:
+
+1. Dê dois cliques em `stats/iniciar.cmd`. Ele roda o `ganwalk-stats.ps1` escondido,
+   sem janela.
+2. Para rodar sempre que o PC ligar: aperte Win+R, digite `shell:startup`, dê Enter e
+   coloque ali um atalho para o `iniciar.cmd`.
+3. Para parar: encerre o processo "Windows PowerShell" no Gerenciador de Tarefas.
+
+O script só responde dentro do próprio PC (`http://localhost:7457/stats`), recusa
+pedidos vindos de sites abertos no navegador e não envia nome do computador nem do
+usuário, só os números do painel. Se a porta 7457 estiver ocupada, rode o script com
+`-Port` e outro número e ajuste "Porta do script de informações" no painel do
+Wallpaper Engine. Sem o script rodando, nada muda: as três linhas ficam sempre no lugar.
 
 ## Arquivos
 
@@ -105,6 +129,7 @@ wallpaper-exp1/
 ├── index.html     # a cena + leitura do áudio do sistema + propriedades
 ├── project.json   # manifesto do Wallpaper Engine (tipo web, áudio ligado, propriedades)
 ├── preview.jpg    # miniatura mostrada no Wallpaper Engine / Workshop
+├── stats/         # script do Windows que entrega as informações do PC ao wallpaper
 ├── lib/           # Three.js r128 + EffectComposer/UnrealBloomPass
 └── fonts/         # Astloch Bold, Inter e Silkscreen (SIL OFL, ver fonts/OFL-*.txt)
 ```
