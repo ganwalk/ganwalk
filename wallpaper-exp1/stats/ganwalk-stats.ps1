@@ -37,7 +37,7 @@ try {
         $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri "http://localhost:$Port/stats"
         Log "Já existe uma cópia rodando nessa porta, e ela respondeu: $($r.Content)"
     } catch {
-        Log "Nenhuma cópia respondeu nessa porta. Outro programa pode estar usando a porta $Port: rode com -Port e outro número e ajuste a porta no painel do wallpaper."
+        Log "Nenhuma cópia respondeu nessa porta. Outro programa pode estar usando a porta ${Port}. Rode com -Port e outro número e ajuste a porta no painel do wallpaper."
     }
     exit 1
 }
