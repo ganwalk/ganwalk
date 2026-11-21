@@ -67,7 +67,7 @@
     /* --- TOCANDO AGORA ---
        Mesma linguagem do painel de controles da Exp I no site: fundo
        --control-bg, borda fina, brilho difuso, rótulos em Silkscreen,
-       trilho de 4px e o mini canvas das três ondas. Desenhado a 1920px
+       trilho de 4px e um espectro em barras com dither. Desenhado a 1920px
        de largura e escalado pela tela (--np-scale). */
     @font-face {
         font-family: 'Silkscreen';
@@ -79,7 +79,7 @@
     #now-playing {
         position: absolute; left: 50%; top: 50%; width: 1040px;
         transform: translate(-50%, -50%) scale(calc(var(--np-scale) * var(--np-pulse)));
-        /* Horizontal: capa | informações | as três ondas, numa linha só. */
+        /* Horizontal: capa | informações | barras do espectro no canto superior direito. */
         display: grid; grid-template-columns: 96px 1fr 300px; column-gap: 22px; align-items: center;
         padding: 16px 20px; border-radius: 8px;
         background: var(--control-bg); border: 1px solid var(--border-color);
@@ -113,11 +113,13 @@
     #np-track { flex: 1; height: 4px; border-radius: 2px; background: var(--border-color); position: relative; overflow: hidden; }
     #np-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--highlight-color); box-shadow: 0 0 6px var(--highlight-color); }
     #np-time { font-family: 'Silkscreen', monospace; font-size: 11px; white-space: nowrap; }
-    #np-mini {
-        height: 96px; border-radius: 6px; overflow: hidden;
-        background: rgba(var(--highlight-rgb), 0.05); border: 1px solid var(--border-color);
+    /* Barras do espectro: soltas no canto superior direito do próprio
+       reprodutor (sem caixa), crescendo da direita para a esquerda. Canvas
+       em meia resolução ampliado sem suavização, para o dither ficar nítido. */
+    #np-bars {
+        width: 300px; height: 64px; align-self: start; justify-self: end; display: block;
+        image-rendering: pixelated; image-rendering: crisp-edges;
     }
-    #np-mini canvas { width: 100%; height: 100%; display: block; }
 
     /* --- RELÓGIO E DATA --- */
     @font-face {
@@ -179,7 +181,7 @@
                 <div id="np-artist"></div>
                 <div id="np-progress"><div id="np-track"><div id="np-fill"></div></div><span id="np-time"></span></div>
             </div>
-            <div id="np-mini"><canvas id="np-mini-canvas"></canvas></div>
+            <canvas id="np-bars" width="150" height="32"></canvas>
         </div>
     </div>
     <canvas id="canvas"></canvas>
@@ -260,6 +262,8 @@ const Wallpaper = {
             const v = Math.min(1.5, (arr[i] + arr[i + 64]) * 0.5);
             if (i < 7) b += v; else if (i < 26) m += v; else h += v;
         }
+        if (!this.spectrum) this.spectrum = new Float32Array(64);
+        for (let i = 0; i < 64; i++) this.spectrum[i] = Math.min(1.5, (arr[i] + arr[i + 64]) * 0.5);
         this.rawBands.b = b / 7;
         this.rawBands.m = m / 19;
         this.rawBands.h = h / 38;
@@ -871,8 +875,10 @@ const DitherWave = {
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(art, ar.left * sx, ar.top * sx, ar.width * sx, ar.height * sx);
             ctx.imageSmoothingEnabled = true;
-            const mini = document.getElementById('np-mini-canvas'), mr = mini.getBoundingClientRect();
-            ctx.drawImage(mini, mr.left * sx, mr.top * sx, mr.width * sx, mr.height * sx);
+            const bars = document.getElementById('np-bars'), br = bars.getBoundingClientRect();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(bars, br.left * sx, br.top * sx, br.width * sx, br.height * sx);
+            ctx.imageSmoothingEnabled = true;
             const label = document.getElementById('np-status');
             drawText(label, label.textContent.toUpperCase(), 0.9, 'left');
             for (const id of ['np-title', 'np-artist', 'np-time']) {
@@ -1045,7 +1051,7 @@ const DitherFade = {
  * no controle de mídia do Windows). Enquanto ela toca, a cada pulso de
  * dither o "GANWALK" vira o reprodutor logo antes da onda sair do
  * icosaedro, e volta logo depois que ela passa. O reprodutor tem capa,
- * título, artista, progresso e as três ondas do mini canvas da Exp I.
+ * título, artista, progresso e um espectro em barras com dither.
  * Música nova (ou o começo de uma) também dispara um pulso.
  *
  * Toda troca (texto ↔ reprodutor, música nova, pausa) passa pelo DitherFade.
@@ -1220,7 +1226,7 @@ const NowPlaying = {
         }
 
         this.drawArt();
-        this.drawMini(b, m, h, t, dir);
+        this.drawBars(t);
     },
 
     // Capa com o mesmo motor do portfólio (ditherFrame): recorte object-cover,
@@ -1264,28 +1270,69 @@ const NowPlaying = {
         ctx.putImageData(image, 0, 0);
     },
 
-    // As três ondas do mini canvas da Exp I (App1.drawMiniCanvas no site).
-    drawMini(b, m, h, time, dir) {
-        const mc = document.getElementById('np-mini-canvas');
-        const pw = mc.parentElement.clientWidth, ph = mc.parentElement.clientHeight;
-        if (mc.width !== pw || mc.height !== ph) { mc.width = pw; mc.height = ph; }
-        const ctx = mc.getContext('2d'), w = mc.width, hC = mc.height;
-        const fx = Wallpaper.fx, bg = Wallpaper.bgThree;
-        ctx.clearRect(0, 0, w, hC);
-        ctx.fillStyle = `rgba(${bg.r * 255},${bg.g * 255},${bg.b * 255},${0.02 + 0.98 * Math.pow(1.0 - fx.reverb, 3)})`;
-        const col = '#' + Wallpaper.fgThree.getHexString();
-        const alpha = Math.max(0, ((100 - fx.filter) / 100)) * 0.8;
-        ctx.lineWidth = 1 + fx.overdrive * 2;
-        const vShift = Math.sin(time * 2) * fx.chorus * 10;
-        const draw = (amp, freq, spd, yOff) => {
-            ctx.beginPath(); ctx.strokeStyle = col; ctx.globalAlpha = alpha;
-            for (let x = 0; x < w; x++) {
-                const y = yOff + Math.sin(((x / w - 0.5) * 4) * freq + time * spd * dir) * (amp * 20 * hC / 30) + vShift + (Math.random() - 0.5) * fx.overdrive * 3;
-                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    // ESPECTRO EM BARRAS
+    // 8 barras (do grave, em cima, ao agudo, embaixo) que crescem da direita
+    // para a esquerda. O preenchimento é dither ordenado com a matriz de Bayer
+    // do portfólio: cheio junto à borda direita e cada vez mais ralo até a
+    // ponta, com a fase da matriz trocando a cada 175 ms (a cintilação) e uma
+    // leve ondulação na densidade, que faz o retículo "respirar".
+    BAR_EDGES: [0, 2, 4, 7, 11, 17, 26, 38, 64], // faixas das 64 bandas do Wallpaper Engine
+    barLevels: new Float32Array(8),
+    barPeaks: new Float32Array(8).fill(0.05),
+    barHold: new Float32Array(8),
+
+    drawBars(t) {
+        const cvs = document.getElementById('np-bars'), ctx = cvs.getContext('2d');
+        const W = cvs.width, H = cvs.height, N = 8;
+        const rows = H / N, thick = Math.max(1, Math.round(rows * 0.75)); // barra + respiro
+        const spec = Wallpaper.spectrum, sens = Wallpaper.settings.sensitivity;
+        const bands = Wallpaper.bands;
+
+        for (let i = 0; i < N; i++) {
+            let v;
+            if (spec && !Wallpaper.demoMode) {
+                let sum = 0;
+                for (let j = this.BAR_EDGES[i]; j < this.BAR_EDGES[i + 1]; j++) sum += spec[j];
+                v = sum / (this.BAR_EDGES[i + 1] - this.BAR_EDGES[i]);
+                this.barPeaks[i] = Math.max(v, this.barPeaks[i] * 0.996, 0.02);
+                v = Math.sqrt(Math.min(1, v / this.barPeaks[i])) * Math.min(1, v / 0.02);
+            } else {
+                // Sem espectro (navegador): deriva das três bandas.
+                const k = i / (N - 1);
+                v = (k < 0.5 ? bands.b * (1 - 2 * k) + bands.m * 2 * k : bands.m * (2 - 2 * k) + bands.h * (2 * k - 1)) * 1.2;
+                v *= 0.75 + 0.25 * Math.sin(t * 7 + i * 1.7);
             }
-            ctx.stroke(); ctx.globalAlpha = 1;
-        };
-        draw(b, 2.0, 5, hC / 2); draw(m, 3.0, 6, hC / 2); draw(h, 4.0, 7, hC / 2);
+            const target = Math.min(1, v * sens);
+            this.barLevels[i] += (target - this.barLevels[i]) * (target > this.barLevels[i] ? 0.5 : 0.15);
+            // Marcador de pico, que cai devagar.
+            this.barHold[i] = Math.max(this.barLevels[i], this.barHold[i] - 0.006);
+        }
+
+        const img = ctx.createImageData(W, H), d = img.data;
+        const fg = Wallpaper.fgThree, r = fg.r * 255, g = fg.g * 255, b = fg.b * 255;
+        const size = DitherWave.MATRIX_SIZE, mask = size - 1, matrix = DitherWave.buildBayer(size);
+        const levels = size * size;
+        const phase = DitherWave.PHASES[Math.floor(performance.now() / DitherWave.STEP_MS) % DitherWave.PHASES.length];
+        const plot = (x, y) => { const o = (y * W + x) * 4; d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255; };
+
+        for (let i = 0; i < N; i++) {
+            const len = Math.round(this.barLevels[i] * W);
+            const y0 = Math.round(i * rows);
+            const breathe = 0.85 + 0.15 * Math.sin(t * 6 + i * 0.9);
+            for (let y = y0; y < y0 + thick && y < H; y++) {
+                const row = ((y + phase.y) & mask) * size;
+                for (let dx = 0; dx < len; dx++) {
+                    const x = W - 1 - dx;
+                    // Densidade: 100% na borda direita, ~20% na ponta.
+                    const dens = (1 - 0.8 * (dx / Math.max(1, len))) * breathe;
+                    if (dens * levels > matrix[row + ((x + phase.x) & mask)]) plot(x, y);
+                }
+                // Pico: um traço vertical de 1 célula, meio retícula.
+                const hx = W - 1 - Math.round(this.barHold[i] * W);
+                if (hx >= 0 && hx < W - len && ((hx + y + phase.x) & 1)) plot(hx, y);
+            }
+        }
+        ctx.putImageData(img, 0, 0);
     },
 
     // Fora do Wallpaper Engine não há integração de mídia: uma faixa de

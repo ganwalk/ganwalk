@@ -72,8 +72,8 @@ Usa a integração de mídia do Wallpaper Engine, que lê o que aparece no contr
 mídia do Windows (Spotify, Tidal, navegador e outros). Se o reprodutor não aparecer,
 confira se a integração de mídia está ligada nas configurações do Wallpaper Engine.
 
-O visual segue o painel de controles da Exp I, numa faixa horizontal (capa, informações e as três ondas lado a lado): fundo escuro com desfoque, borda
-fina, rótulos em Silkscreen, trilho de progresso e o mini canvas com as três ondas.
+O visual segue o painel de controles da Exp I, numa faixa horizontal (capa e informações, com um espectro em barras no canto superior direito): fundo escuro com desfoque, borda
+fina, rótulos em Silkscreen, trilho de progresso e 8 barras de espectro, do grave ao agudo, que crescem da direita para a esquerda com preenchimento em dither oscilante (a mesma matriz de Bayer, mais densa na borda e rala na ponta).
 A capa do álbum passa pelo mesmo dither do portfólio e cintila a cada 175 ms.
 
 Todas as transições são em dither: o texto, o reprodutor, o relógio e a data entram
