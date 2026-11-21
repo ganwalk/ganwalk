@@ -42,6 +42,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Tamanho, distância do topo, opacidade e brilho do relógio | Posicionamento e aparência do relógio. |
 | Descer a cena | Quanto a grade, o icosaedro, as ondas e o texto descem para abrir espaço ao relógio. Com o relógio desligado, a cena volta à posição original. |
 | Onda de dither | De tempos em tempos uma onda nasce no icosaedro e se expande pela tela como um anel. Por onde passa, transforma tudo (cena, "GANWALK", relógio) num retículo de dither. |
+| Intervalo com música tocando | Enquanto uma música toca (integração de mídia), o pulso acontece a cada 25 s em vez de 10 s. Passado esse tempo, ele espera a próxima batida forte do grave (até 3 s) para cair no tempo da música. |
 | Disparar quando o grave bater forte | Além do intervalo, a onda sai na hora quando o grave dá um salto bem acima da média recente (bumbo forte, drop). A sensibilidade decide o tamanho do salto, e o tempo mínimo evita uma onda atrás da outra. |
 | Intervalo, duração, largura | De quanto em quanto tempo a onda passa (10 s por padrão), quanto tempo leva para atravessar e a largura do anel. |
 | Tamanho do pixel / Intensidade do retículo | O tamanho de cada ponto e quanto o fundo escuro vira pontilhado. |
@@ -71,7 +72,7 @@ Usa a integração de mídia do Wallpaper Engine, que lê o que aparece no contr
 mídia do Windows (Spotify, Tidal, navegador e outros). Se o reprodutor não aparecer,
 confira se a integração de mídia está ligada nas configurações do Wallpaper Engine.
 
-O visual segue o painel de controles da Exp I: fundo escuro com desfoque, borda
+O visual segue o painel de controles da Exp I, numa faixa horizontal (capa, informações e as três ondas lado a lado): fundo escuro com desfoque, borda
 fina, rótulos em Silkscreen, trilho de progresso e o mini canvas com as três ondas.
 A capa do álbum passa pelo mesmo dither do portfólio e cintila a cada 175 ms.
 

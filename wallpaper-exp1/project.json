@@ -110,7 +110,7 @@
 				"order": 12
 			},
 			"ditherinterval": {
-				"text": "Intervalo entre ondas (s)",
+				"text": "Intervalo entre ondas sem música (s)",
 				"type": "slider",
 				"min": 3,
 				"max": 60,
@@ -118,12 +118,21 @@
 				"condition": "ditherenabled.value == true",
 				"order": 13
 			},
+			"dithermediainterval": {
+				"text": "Intervalo com música tocando (s)",
+				"type": "slider",
+				"min": 5,
+				"max": 120,
+				"value": 25,
+				"condition": "ditherenabled.value == true",
+				"order": 14
+			},
 			"ditherbass": {
 				"text": "Disparar quando o grave bater forte",
 				"type": "bool",
 				"value": true,
 				"condition": "ditherenabled.value == true",
-				"order": 14
+				"order": 15
 			},
 			"ditherbasssens": {
 				"text": "Sensibilidade do disparo",
@@ -134,7 +143,7 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "ditherbass.value == true",
-				"order": 15
+				"order": 16
 			},
 			"ditherbasscooldown": {
 				"text": "Tempo mínimo entre disparos (s)",
@@ -145,7 +154,7 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "ditherbass.value == true",
-				"order": 16
+				"order": 17
 			},
 			"ditherduration": {
 				"text": "Duração da travessia (s)",
@@ -156,7 +165,7 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "ditherenabled.value == true",
-				"order": 17
+				"order": 18
 			},
 			"ditherwidth": {
 				"text": "Largura da onda (%)",
@@ -165,7 +174,7 @@
 				"max": 100,
 				"value": 35,
 				"condition": "ditherenabled.value == true",
-				"order": 18
+				"order": 19
 			},
 			"ditherpixel": {
 				"text": "Tamanho do pixel do dither",
@@ -174,7 +183,7 @@
 				"max": 8,
 				"value": 3,
 				"condition": "ditherenabled.value == true",
-				"order": 19
+				"order": 20
 			},
 			"ditherlift": {
 				"text": "Intensidade do retículo",
@@ -183,7 +192,7 @@
 				"max": 200,
 				"value": 55,
 				"condition": "ditherenabled.value == true",
-				"order": 20
+				"order": 21
 			},
 			"dithermode": {
 				"text": "Cores do dither",
@@ -200,7 +209,7 @@
 						"value": "mask"
 					}
 				],
-				"order": 21
+				"order": 22
 			},
 			"ditherdirection": {
 				"text": "Origem da onda",
@@ -229,10 +238,10 @@
 						"value": "diagonal"
 					}
 				],
-				"order": 22
+				"order": 23
 			},
 			"sensitivity": {
-				"order": 23,
+				"order": 24,
 				"text": "Sensibilidade ao som",
 				"type": "slider",
 				"min": 0,
@@ -243,25 +252,25 @@
 				"editable": true
 			},
 			"autogain": {
-				"order": 24,
+				"order": 25,
 				"text": "Ganho automático (reage igual em volume baixo)",
 				"type": "bool",
 				"value": true
 			},
 			"reverse": {
-				"order": 25,
+				"order": 26,
 				"text": "Girar ao contrário",
 				"type": "bool",
 				"value": false
 			},
 			"idlemotion": {
-				"order": 26,
+				"order": 27,
 				"text": "Movimento no silêncio",
 				"type": "bool",
 				"value": true
 			},
 			"delay": {
-				"order": 27,
+				"order": 28,
 				"text": "Eco Profundo",
 				"type": "slider",
 				"min": 0,
@@ -271,7 +280,7 @@
 				"precision": 2
 			},
 			"reverb": {
-				"order": 28,
+				"order": 29,
 				"text": "Câmara Etérea (Rastro)",
 				"type": "slider",
 				"min": 0,
@@ -281,7 +290,7 @@
 				"precision": 2
 			},
 			"chorus": {
-				"order": 29,
+				"order": 30,
 				"text": "Oscilador de Realidades",
 				"type": "slider",
 				"min": 0,
@@ -291,7 +300,7 @@
 				"precision": 2
 			},
 			"filter": {
-				"order": 30,
+				"order": 31,
 				"text": "Véu Sonoro",
 				"type": "slider",
 				"min": 0,
@@ -299,7 +308,7 @@
 				"value": 0
 			},
 			"overdrive": {
-				"order": 31,
+				"order": 32,
 				"text": "Distorção Cósmica",
 				"type": "slider",
 				"min": 0,
@@ -309,7 +318,7 @@
 				"precision": 2
 			},
 			"bloom": {
-				"order": 32,
+				"order": 33,
 				"text": "Brilho extra (bloom)",
 				"type": "slider",
 				"min": 0,
@@ -319,7 +328,7 @@
 				"precision": 2
 			},
 			"showshape": {
-				"order": 33,
+				"order": 34,
 				"text": "Mostrar icosaedro",
 				"type": "bool",
 				"value": true
@@ -333,16 +342,16 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "showshape.value == true",
-				"order": 34
+				"order": 35
 			},
 			"showgrid": {
-				"order": 35,
+				"order": 36,
 				"text": "Mostrar grade",
 				"type": "bool",
 				"value": true
 			},
 			"showwaves": {
-				"order": 36,
+				"order": 37,
 				"text": "Mostrar ondas",
 				"type": "bool",
 				"value": true
@@ -354,23 +363,23 @@
 				"max": 120,
 				"value": 48,
 				"condition": "showwaves.value == true",
-				"order": 37
+				"order": 38
 			},
 			"showtext": {
-				"order": 38,
+				"order": 39,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 39,
+				"order": 40,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 40,
+				"order": 41,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -386,10 +395,10 @@
 				"value": 4,
 				"fraction": true,
 				"precision": 1,
-				"order": 41
+				"order": 42
 			},
 			"textopacity": {
-				"order": 42,
+				"order": 43,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -400,7 +409,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 43,
+				"order": 44,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -410,7 +419,7 @@
 				"text": "Mostrar a música tocando (troca com o texto no pulso)",
 				"type": "bool",
 				"value": true,
-				"order": 44
+				"order": 45
 			},
 			"npholdafter": {
 				"text": "Tempo do reprodutor após o pulso (s)",
@@ -421,7 +430,7 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "npenabled.value == true",
-				"order": 45
+				"order": 46
 			},
 			"npsize": {
 				"text": "Tamanho do reprodutor",
@@ -432,17 +441,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 46
+				"order": 47
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 47
+				"order": 48
 			},
 			"quality": {
-				"order": 48,
+				"order": 49,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",

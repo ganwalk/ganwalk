@@ -77,10 +77,11 @@
     }
     :root { --control-bg: rgba(18, 12, 7, 0.9); --border-color: rgba(236, 224, 198, 0.3); --np-scale: 1; --np-pulse: 1; }
     #now-playing {
-        position: absolute; left: 50%; top: 50%; width: 640px;
+        position: absolute; left: 50%; top: 50%; width: 1040px;
         transform: translate(-50%, -50%) scale(calc(var(--np-scale) * var(--np-pulse)));
-        display: grid; grid-template-columns: 132px 1fr; column-gap: 22px; row-gap: 16px;
-        padding: 20px 22px; border-radius: 8px;
+        /* Horizontal: capa | informações | as três ondas, numa linha só. */
+        display: grid; grid-template-columns: 96px 1fr 300px; column-gap: 22px; align-items: center;
+        padding: 16px 20px; border-radius: 8px;
         background: var(--control-bg); border: 1px solid var(--border-color);
         -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
         box-shadow: 0 0 30px rgba(var(--highlight-rgb), 0.15);
@@ -88,7 +89,7 @@
         pointer-events: none; visibility: hidden;
     }
     #np-art {
-        width: 132px; height: 132px; display: block; border-radius: 4px;
+        width: 96px; height: 96px; display: block; border-radius: 4px;
         border: 1px solid var(--border-color);
         image-rendering: pixelated; image-rendering: crisp-edges;
     }
@@ -99,7 +100,7 @@
     }
     #np-dot { width: 7px; height: 7px; background: var(--highlight-color); box-shadow: 0 0 6px var(--highlight-color); }
     #np-title {
-        font-size: 26px; font-weight: 600; line-height: 1.15; margin-top: 10px;
+        font-size: 24px; font-weight: 600; line-height: 1.15; margin-top: 6px;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         text-shadow: 0 0 10px rgba(var(--highlight-rgb), 0.45);
     }
@@ -107,13 +108,13 @@
         font-size: 15px; font-weight: 400; margin-top: 4px; opacity: 0.75;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    #np-progress { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    #np-progress { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
     #np-progress.hidden { display: none; }
     #np-track { flex: 1; height: 4px; border-radius: 2px; background: var(--border-color); position: relative; overflow: hidden; }
     #np-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--highlight-color); box-shadow: 0 0 6px var(--highlight-color); }
     #np-time { font-family: 'Silkscreen', monospace; font-size: 11px; white-space: nowrap; }
     #np-mini {
-        grid-column: 1 / -1; height: 30px; border-radius: 6px; overflow: hidden;
+        height: 96px; border-radius: 6px; overflow: hidden;
         background: rgba(var(--highlight-rgb), 0.05); border: 1px solid var(--border-color);
     }
     #np-mini canvas { width: 100%; height: 100%; display: block; }
@@ -627,6 +628,7 @@ window.wallpaperPropertyListener = {
         if (p.dithermode) D.mode = p.dithermode.value;
         if (p.ditherdirection) D.direction = p.ditherdirection.value;
         if (p.ditherbass) D.bassTrigger = p.ditherbass.value;
+        if (p.dithermediainterval) D.mediaIntervalMs = p.dithermediainterval.value * 1000;
         if (p.ditherpixel) DitherFade.buildTiles();
 
         const N = NowPlaying;
@@ -756,6 +758,7 @@ const DitherWave = {
         return true;
     },
 
+    lastEndAt: 0,     // fim do último pulso (base do intervalo com música)
     pending: false,   // a troca para o reprodutor está acontecendo e o pulso vem logo em seguida
     requested: false, // alguém pediu um pulso fora de hora (música começou, faixa nova)
 
@@ -777,11 +780,25 @@ const DitherWave = {
         }
     },
 
+    // Com música tocando (integração de mídia), o pulso fica mais espaçado:
+    // a cada `mediaIntervalMs` (25 s). O grave continua valendo, mas aí ele
+    // não adianta o pulso: passados os 25 s, o pulso espera a próxima batida
+    // forte para cair no tempo da música (no máximo `beatWaitMs`).
+    mediaIntervalMs: 25000,
+    beatWaitMs: 3000,
+
     frame(now) {
         const kick = this.enabled && this.bassTrigger && this.detectKick(now);
         if (this.startedAt < 0) {
             if (this.pending) return;
-            const due = this.requested || (this.enabled && (kick || now >= this.nextAt));
+            let due;
+            if (NowPlaying.playing) {
+                const nextAt = this.lastEndAt + this.mediaIntervalMs;
+                const onBeat = kick || !this.bassTrigger || now >= nextAt + this.beatWaitMs;
+                due = this.requested || (this.enabled && now >= nextAt && onBeat);
+            } else {
+                due = this.requested || (this.enabled && (kick || now >= this.nextAt));
+            }
             if (!due) return;
             this.requested = false;
             this.start();
@@ -793,6 +810,7 @@ const DitherWave = {
             this.ctx.clearRect(0, 0, this.w, this.h);
             this.startedAt = -1;
             this.nextAt = now + this.intervalMs;
+            this.lastEndAt = now;
             NowPlaying.afterPulse(); // ...e volta para o "GANWALK" logo depois
             return;
         }
@@ -1262,7 +1280,7 @@ const NowPlaying = {
         const draw = (amp, freq, spd, yOff) => {
             ctx.beginPath(); ctx.strokeStyle = col; ctx.globalAlpha = alpha;
             for (let x = 0; x < w; x++) {
-                const y = yOff + Math.sin(((x / w - 0.5) * 4) * freq + time * spd * dir) * (amp * 20) + vShift + (Math.random() - 0.5) * fx.overdrive * 3;
+                const y = yOff + Math.sin(((x / w - 0.5) * 4) * freq + time * spd * dir) * (amp * 20 * hC / 30) + vShift + (Math.random() - 0.5) * fx.overdrive * 3;
                 if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.stroke(); ctx.globalAlpha = 1;
