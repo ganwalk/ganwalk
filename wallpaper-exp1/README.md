@@ -61,6 +61,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, de fora a fora na tela. Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
 | Mostrar informações do PC sem música | Liga o painel de processador, memória, discos e tempo ligado no lugar das linhas quando não há música (precisa do script da pasta `stats/`). |
 | Porta do script de informações | A porta em que o script responde (7457 por padrão). |
+| Mostrar temperatura da CPU e da GPU | As duas barras verticais nas laterais da grade (precisam do script e, para a CPU, do LibreHardwareMonitor). |
 | Texto, tamanho, opacidade, brilho neon | Personaliza o "GANWALK" do centro. |
 | Descer o texto | Desce o "GANWALK" (e o reprodutor, que ocupa o mesmo lugar) sem mexer nas três linhas. 4% da altura da tela por padrão. |
 | Resolução de render | 100%, 75% ou 50%. Use 75% ou 50% em monitores 4K ou PCs mais fracos. |
@@ -95,17 +96,36 @@ em vez de ter uma borda lisa. Fora da onda, nada disso roda.
 
 ## Interação
 
-O icosaedro segue o mouse, sem precisar clicar: desliza na direção do cursor, vira de
-frente para ele e se inclina, com uma mola suave. A velocidade do movimento ainda
-vira giro (com inércia), e um movimento rápido na horizontal faz a forma inflar, como
-o "arranhar" da música no site. A intensidade fica em "Icosaedro segue o mouse"
-(0 desliga, 3 é o máximo).
+O icosaedro gira seguindo o mouse, sem precisar clicar e sem sair do lugar na grade:
+vira de frente para o cursor e se inclina, com uma mola suave. A velocidade do
+movimento ainda vira giro (com inércia), e um movimento rápido na horizontal faz a
+forma inflar, como o "arranhar" da música no site. A intensidade fica em "Icosaedro
+gira seguindo o mouse" (0 desliga, 3 é o máximo).
 
 ## Informações do PC (sem música)
 
 Quando nenhuma música está tocando, o lugar das três linhas mostra processador,
 memória, espaço livre dos discos e há quanto tempo o PC está ligado, com barras de
-uso em dither. Quando a música começa, as linhas voltam. A troca é em dither.
+uso em dither. A temperatura da CPU e a da GPU aparecem em duas barras verticais
+coladas nas laterais da grade do icosaedro (CPU à esquerda, GPU à direita), cheias de
+baixo para cima entre 30 °C e 100 °C; acima de 80 °C a barra fica mostarda. Quando a
+música começa, tudo isso sai e as linhas voltam. A troca é em dither.
+
+### Temperaturas
+
+O Windows não entrega a temperatura da CPU de forma confiável, então o script tenta,
+nesta ordem:
+
+1. **LibreHardwareMonitor** (gratuito, recomendado): se ele estiver aberto, o script
+   lê os sensores de CPU e GPU de qualquer marca. Ele precisa rodar como administrador
+   para ler os sensores; dá para deixá-lo iniciar com o Windows e minimizado nas
+   opções dele. O OpenHardwareMonitor também funciona.
+2. **GPU NVIDIA:** sem o LibreHardwareMonitor, a temperatura da GPU vem do
+   `nvidia-smi`, que já vem com o driver.
+3. **CPU, último recurso:** a zona térmica do Windows, que costuma exigir administrador
+   e nem sempre reflete a CPU de verdade.
+
+Se uma das temperaturas não estiver disponível, a barra dela simplesmente não aparece.
 
 Um wallpaper web não tem acesso ao disco, à memória nem ao processador, então quem
 lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:

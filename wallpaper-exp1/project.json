@@ -334,7 +334,7 @@
 				"value": true
 			},
 			"mousefollow": {
-				"text": "Icosaedro segue o mouse",
+				"text": "Icosaedro gira seguindo o mouse",
 				"type": "slider",
 				"min": 0,
 				"max": 3,
@@ -381,21 +381,28 @@
 				"condition": "sysenabled.value == true",
 				"order": 40
 			},
+			"systemps": {
+				"text": "Mostrar temperatura da CPU e da GPU",
+				"type": "bool",
+				"value": true,
+				"condition": "sysenabled.value == true",
+				"order": 41
+			},
 			"showtext": {
-				"order": 41,
+				"order": 42,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 42,
+				"order": 43,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 43,
+				"order": 44,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -411,10 +418,10 @@
 				"value": 4,
 				"fraction": true,
 				"precision": 1,
-				"order": 44
+				"order": 45
 			},
 			"textopacity": {
-				"order": 45,
+				"order": 46,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -425,7 +432,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 46,
+				"order": 47,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -435,10 +442,10 @@
 				"text": "Mostrar a música tocando (reprodutor no lugar do texto)",
 				"type": "bool",
 				"value": true,
-				"order": 47
+				"order": 48
 			},
 			"nptexthold": {
-				"order": 48,
+				"order": 49,
 				"text": "Tempo do GANWALK durante a música (s)",
 				"type": "slider",
 				"min": 1,
@@ -457,17 +464,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 49
+				"order": 50
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 50
+				"order": 51
 			},
 			"quality": {
-				"order": 51,
+				"order": 52,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",

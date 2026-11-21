@@ -177,6 +177,18 @@
     .sys-sub { font-size: 12px; opacity: 0.6; white-space: nowrap; }
     .sys-bar { width: 100%; height: 10px; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
 
+    /* Temperaturas: duas barras verticais coladas nas laterais da grade.
+       Posição e altura calculadas a cada quadro a partir da grade 3D. */
+    .temp-bar {
+        position: absolute; z-index: 1; pointer-events: none; visibility: hidden;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        color: var(--highlight-color);
+    }
+    .temp-label { font-family: 'Silkscreen', monospace; font-size: 11px; letter-spacing: 0.5px; opacity: 0.85; }
+    .temp-value { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 300; white-space: nowrap;
+        text-shadow: 0 0 8px rgba(var(--highlight-rgb), 0.45); }
+    .temp-bar canvas { width: 10px; flex: 1; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+
     /* --- ONDA DE DITHER --- */
     /* Canvas em baixa resolução esticado sem suavização: cada célula do
        retículo vira um bloco nítido de N×N pixels na tela. */
@@ -209,6 +221,8 @@
     <canvas id="canvas"></canvas>
     <canvas id="waves"></canvas>
     <div id="sys-panel"></div>
+    <div class="temp-bar" id="temp-cpu"><div class="temp-label">CPU</div><div class="temp-value"></div><canvas width="5" height="120"></canvas></div>
+    <div class="temp-bar" id="temp-gpu"><div class="temp-label">GPU</div><div class="temp-value"></div><canvas width="5" height="120"></canvas></div>
     <canvas id="dither"></canvas>
 </div>
 
@@ -353,14 +367,14 @@ const Wallpaper = {
         this.fadeMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ color: this.bgThree, transparent: true, opacity: 1.0 }));
         this.fadeScene.add(this.fadeMesh);
 
-        // followGroup: segue o mouse (desloca e vira na direção do cursor).
+        // followGroup: segue o mouse girando (não se desloca).
         // visualGroup: o giro contínuo do site, dentro dele.
         this.followGroup = new THREE.Group(); this.followGroup.position.y = 12; this.root.add(this.followGroup);
         this.visualGroup = new THREE.Group(); this.followGroup.add(this.visualGroup);
         this.centralShape = new THREE.Mesh(new THREE.IcosahedronGeometry(8, 0), new THREE.MeshBasicMaterial({ color: this.fgThree, wireframe: true, transparent: true, opacity: 1 }));
         this.visualGroup.add(this.centralShape);
 
-        const gridGroup = new THREE.Group(); gridGroup.position.y = 12; this.root.add(gridGroup);
+        const gridGroup = new THREE.Group(); gridGroup.position.y = 12; this.root.add(gridGroup); this.gridGroup = gridGroup;
         const lm = new THREE.LineBasicMaterial({ color: this.fgThree, transparent: true, opacity: 0.6 });
         for (let i = 0; i <= 30; i++) {
             let pts = []; for (let j = 0; j <= 30; j++) pts.push(new THREE.Vector3(j - 15, i - 15, 0));
@@ -441,16 +455,14 @@ const Wallpaper = {
         this.centralShape.rotation.y += (0.005 * idle + m * 0.02) * dir + this.mouseSpin.y;
         // Inércia do giro e inclinação suave em direção ao cursor.
         this.mouseSpin.x *= 0.92; this.mouseSpin.y *= 0.92;
-        // Segue o cursor: o icosaedro desliza na direção dele, vira de frente
-        // para ele e se inclina, com uma mola suave (sem precisar clicar).
+        // Segue o cursor girando no próprio eixo: vira de frente para ele e se
+        // inclina, com uma mola suave, sem sair do lugar na grade.
         const f = this.mouseFollow;
-        this.mouseTilt.x += (-this.mouse.y * 0.9 * f - this.mouseTilt.x) * 0.08;
-        this.mouseTilt.y += (this.mouse.x * 0.9 * f - this.mouseTilt.y) * 0.08;
+        this.mouseTilt.x += (-this.mouse.y * 1.1 * f - this.mouseTilt.x) * 0.08;
+        this.mouseTilt.y += (this.mouse.x * 1.4 * f - this.mouseTilt.y) * 0.08;
         this.followGroup.rotation.x = this.mouseTilt.x;
         this.followGroup.rotation.y = this.mouseTilt.y;
         this.followGroup.rotation.z = -this.mouseTilt.y * 0.25;
-        this.followGroup.position.x += (this.mouse.x * 7 * f - this.followGroup.position.x) * 0.06;
-        this.followGroup.position.y += (12 + this.mouse.y * 4 * f - this.followGroup.position.y) * 0.06;
         this.centralShape.rotation.z += cVal * 0.05 * dir;
         this.centralShape.scale.set(1 + b * 0.5 + odVal * 0.5, 1 + b * 0.5 - odVal * 0.5, 1 + b * 0.5 + odVal * 0.5);
 
@@ -680,6 +692,7 @@ window.wallpaperPropertyListener = {
         if (p.textdrop) W.textDrop = p.textdrop.value;
         if (p.sysenabled) { SysStats.enabled = p.sysenabled.value; SysStats.poll(); }
         if (p.sysport) { SysStats.port = p.sysport.value; SysStats.poll(); }
+        if (p.systemps) { SysStats.showTemps = p.systemps.value; SysStats.apply(); }
         if (p.ditherbasssens) D.bassSensitivity = p.ditherbasssens.value;
         if (p.ditherbasscooldown) D.bassCooldownMs = p.ditherbasscooldown.value * 1000;
 
@@ -902,6 +915,16 @@ const DitherWave = {
         if (!DitherFade.isHidden(waves)) {
             const wr = waves.getBoundingClientRect();
             ctx.drawImage(waves, wr.left * sx, wr.top * sx, wr.width * sx, wr.height * sx);
+        }
+        for (const id of ['temp-cpu', 'temp-gpu']) {
+            const el = document.getElementById(id);
+            if (DitherFade.isHidden(el)) continue;
+            drawText(el.querySelector('.temp-label'), el.querySelector('.temp-label').textContent, 0.85);
+            drawText(el.querySelector('.temp-value'), el.querySelector('.temp-value').textContent, 1);
+            const c = el.querySelector('canvas'), cr = c.getBoundingClientRect();
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(c, cr.left * sx, cr.top * sx, cr.width * sx, cr.height * sx);
+            ctx.imageSmoothingEnabled = true;
         }
         const sysPanel = document.getElementById('sys-panel');
         if (!DitherFade.isHidden(sysPanel)) {
@@ -1418,7 +1441,9 @@ const NowPlaying = {
  * pequeno, e o wallpaper consulta a cada 3 s. Sem o script, nada muda: as
  * três linhas continuam no lugar.
  *
- * Sem música tocando, o painel ocupa o lugar das três linhas; com música,
+ * Sem música tocando, o painel ocupa o lugar das três linhas e as
+ * temperaturas da CPU e da GPU aparecem em duas barras verticais coladas nas
+ * laterais da grade; com música,
  * as linhas voltam. A troca é em dither, como todas as outras. As barras de
  * uso são preenchidas com a mesma matriz de Bayer, cintilando.
  */
@@ -1451,6 +1476,61 @@ const SysStats = {
         const panel = this.available() && !NowPlaying.playing;
         DitherFade.set(document.getElementById('sys-panel'), panel);
         DitherFade.set(document.getElementById('waves'), Wallpaper.settings.showWaves && !panel);
+        // As temperaturas fazem parte do painel: aparecem junto, se o script as informar.
+        const d = this.data || {};
+        DitherFade.set(document.getElementById('temp-cpu'), panel && this.showTemps && typeof d.cpuTemp === 'number');
+        DitherFade.set(document.getElementById('temp-gpu'), panel && this.showTemps && typeof d.gpuTemp === 'number');
+    },
+    showTemps: true,
+
+    // Cola as barras nas laterais da grade: projeta os cantos dela na tela.
+    placeTemps() {
+        const W = Wallpaper, g = W.gridGroup;
+        if (!g) return null;
+        const v = new THREE.Vector3(), H = window.innerHeight, Wd = window.innerWidth;
+        const proj = (x, y) => { v.set(x, y, 0); g.localToWorld(v); v.project(W.camera); return { x: (v.x + 1) / 2 * Wd, y: (1 - v.y) / 2 * H }; };
+        const tl = proj(-15, 15), bl = proj(-15, -15), tr = proj(15, 15);
+        const gap = 34 * Wd / 1920; // folga para a ondulação da grade
+        const top = tl.y, height = bl.y - tl.y;
+        for (const [id, x, side] of [['temp-cpu', tl.x - gap, 'right'], ['temp-gpu', tr.x + gap, 'left']]) {
+            const el = document.getElementById(id);
+            el.style.top = top + 'px';
+            el.style.height = height + 'px';
+            // A barra encosta na grade; o texto fica centrado sobre a barra.
+            el.style.left = x + 'px';
+            el.style.transform = 'translateX(-50%)';
+        }
+        return height;
+    },
+
+    // Temperatura em dither, crescendo de baixo para cima (30 °C vazio, 100 °C cheio).
+    // Acima de 80 °C a barra muda para o mostarda do site.
+    drawTemp(id, temp, t, phase) {
+        const el = document.getElementById(id);
+        if (typeof temp !== 'number' || DitherFade.isHidden(el)) return;
+        el.querySelector('.temp-value').textContent = `${Math.round(temp)}°`;
+        const cvs = el.querySelector('canvas');
+        const wantH = Math.max(8, Math.round(cvs.clientHeight / 2));
+        if (cvs.height !== wantH) cvs.height = wantH;
+        const ctx = cvs.getContext('2d'), Wc = cvs.width, Hc = cvs.height;
+        const img = ctx.createImageData(Wc, Hc), dd = img.data;
+        const size = DitherWave.MATRIX_SIZE, mask = size - 1, matrix = DitherWave.buildBayer(size), levels = size * size;
+        const hot = temp >= 80;
+        const c = hot ? new THREE.Color(0xd99a4e) : Wallpaper.fgThree;
+        const R = c.r * 255, G = c.g * 255, B = c.b * 255;
+        const lvl = Math.max(0, Math.min(1, (temp - 30) / 70));
+        for (let y = 0; y < Hc; y++) {
+            const row = ((y + phase.y) & mask) * size;
+            const f = 1 - y / Hc; // 0 embaixo, 1 em cima
+            let dens = 2 / levels; // trilho
+            if (f < lvl) dens = 1 - 0.55 * (f / Math.max(0.001, lvl)) * (0.9 + 0.1 * Math.sin(t * 4));
+            for (let x = 0; x < Wc; x++) {
+                if (dens * levels > matrix[row + ((x + phase.x) & mask)]) {
+                    const o = (y * Wc + x) * 4; dd[o] = R; dd[o + 1] = G; dd[o + 2] = B; dd[o + 3] = 255;
+                }
+            }
+        }
+        ctx.putImageData(img, 0, 0);
     },
 
     fmtGB(gb) { return gb >= 1000 ? (gb / 1024).toFixed(1).replace('.', ',') + ' TB' : Math.round(gb) + ' GB'; },
@@ -1494,6 +1574,12 @@ const SysStats = {
 
     // Barras de uso em dither (cheias até o uso, com a fase trocando a cada 175 ms).
     frame(t) {
+        this.placeTemps();
+        if (this.data) {
+            const ph = DitherWave.PHASES[Math.floor(performance.now() / DitherWave.STEP_MS) % DitherWave.PHASES.length];
+            this.drawTemp('temp-cpu', this.data.cpuTemp, t, ph);
+            this.drawTemp('temp-gpu', this.data.gpuTemp, t, ph);
+        }
         const panel = document.getElementById('sys-panel');
         if (!this.current || DitherFade.isHidden(panel)) return;
         const size = DitherWave.MATRIX_SIZE, mask = size - 1, matrix = DitherWave.buildBayer(size), levels = size * size;
