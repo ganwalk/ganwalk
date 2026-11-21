@@ -107,7 +107,7 @@ gira seguindo o mouse" (0 desliga, 3 é o máximo).
 Quando nenhuma música está tocando, o lugar das três linhas mostra processador,
 memória, espaço livre dos discos e há quanto tempo o PC está ligado, com barras de
 uso em dither. A temperatura da CPU e a da GPU aparecem em duas barras verticais
-coladas nas laterais da grade do icosaedro (CPU à esquerda, GPU à direita), cheias de
+ao lado da grade do icosaedro (CPU à esquerda, GPU à direita), terminando acima do "GANWALK", cheias de
 baixo para cima entre 30 °C e 100 °C; acima de 80 °C a barra fica mostarda. Quando a
 música começa, tudo isso sai e as linhas voltam. A troca é em dither.
 

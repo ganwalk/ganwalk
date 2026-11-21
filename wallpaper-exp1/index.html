@@ -529,6 +529,10 @@ const Wallpaper = {
         waves.style.height = this.lower.gap + 'px';
         const panel = document.getElementById('sys-panel');
         panel.style.top = this.lower.mid + 'px';
+        // O painel ocupa a mesma largura do "GANWALK" (sem o pulso de escala).
+        // A largura vai em px de design, porque o painel é escalado por --np-scale.
+        const npS = window.innerWidth / 1920 * NowPlaying.boxSize;
+        panel.style.width = (document.getElementById('main-text').offsetWidth / npS) + 'px';
     },
 
     // As três linhas: mesma fórmula do site (frequência, velocidade e a
@@ -1490,8 +1494,13 @@ const SysStats = {
         const v = new THREE.Vector3(), H = window.innerHeight, Wd = window.innerWidth;
         const proj = (x, y) => { v.set(x, y, 0); g.localToWorld(v); v.project(W.camera); return { x: (v.x + 1) / 2 * Wd, y: (1 - v.y) / 2 * H }; };
         const tl = proj(-15, 15), bl = proj(-15, -15), tr = proj(15, 15);
-        const gap = 34 * Wd / 1920; // folga para a ondulação da grade
-        const top = tl.y, height = bl.y - tl.y;
+        const gap = 72 * Wd / 1920; // bem afastadas da grade (e da ondulação dela)
+        // Mesma altura da grade, mas subindo o suficiente para terminar acima
+        // do "GANWALK" (a grade passa por trás dele; as barras não).
+        const height = bl.y - tl.y;
+        const textTop = document.getElementById('main-text').getBoundingClientRect().top;
+        const bottom = Math.min(bl.y, textTop - 16 * H / 1080);
+        const top = Math.max(8, bottom - height);
         for (const [id, x, side] of [['temp-cpu', tl.x - gap, 'right'], ['temp-gpu', tr.x + gap, 'left']]) {
             const el = document.getElementById(id);
             el.style.top = top + 'px';
