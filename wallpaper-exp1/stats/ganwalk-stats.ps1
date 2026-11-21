@@ -104,8 +104,27 @@ function Test-Origin($origin) {
     return $true
 }
 
+# Os dados são lidos em segundo plano, a cada 2 s, e cada pedido recebe na hora
+# a última leitura pronta. Ler os sensores do Windows pode levar mais de um
+# segundo; se isso acontecesse durante o pedido, o wallpaper desistiria de esperar.
+function Update-Cache {
+    try {
+        $script:cache = Get-Stats | ConvertTo-Json -Depth 4 -Compress
+        $script:cacheAt = Get-Date
+    } catch {
+        Write-Host "Erro ao ler os dados: $($_.Exception.Message)"
+    }
+}
+Write-Host "Lendo os dados pela primeira vez..."
+Update-Cache
+Write-Host "Pronto. Teste no navegador: http://localhost:$Port/stats"
+
 while ($listener.IsListening) {
-    $ctx = $listener.GetContext()
+    $task = $listener.GetContextAsync()
+    while (-not $task.AsyncWaitHandle.WaitOne(500)) {
+        if (((Get-Date) - $script:cacheAt).TotalSeconds -ge 2) { Update-Cache }
+    }
+    $ctx = $task.GetAwaiter().GetResult()
     $req = $ctx.Request
     $res = $ctx.Response
     try {
@@ -132,11 +151,8 @@ while ($listener.IsListening) {
             continue
         }
 
-        # Recalcula no máximo a cada 2 s (o wallpaper consulta a cada 3 s).
-        if ($null -eq $script:cache -or ((Get-Date) - $script:cacheAt).TotalSeconds -ge 2) {
-            $script:cache = Get-Stats | ConvertTo-Json -Depth 4 -Compress
-            $script:cacheAt = Get-Date
-        }
+        if ($null -eq $script:cache) { Update-Cache }
+        if ($null -eq $script:cache) { $script:cache = '{}' }
         $bytes = [System.Text.Encoding]::UTF8.GetBytes($script:cache)
         $res.ContentType = 'application/json; charset=utf-8'
         $res.Headers.Add('Cache-Control', 'no-store')

@@ -189,6 +189,12 @@
         text-shadow: 0 0 8px rgba(var(--highlight-rgb), 0.45); }
     .temp-bar canvas { width: 10px; flex: 1; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
 
+    /* Linha de diagnóstico do script de informações (só com a opção ligada). */
+    #sys-diag {
+        position: absolute; left: 16px; top: 12px; z-index: 4; display: none; pointer-events: none;
+        font-family: 'Silkscreen', monospace; font-size: 11px; color: var(--highlight-color); opacity: 0.85;
+    }
+
     /* --- ONDA DE DITHER --- */
     /* Canvas em baixa resolução esticado sem suavização: cada célula do
        retículo vira um bloco nítido de N×N pixels na tela. */
@@ -221,6 +227,7 @@
     <canvas id="canvas"></canvas>
     <canvas id="waves"></canvas>
     <div id="sys-panel"></div>
+    <div id="sys-diag"></div>
     <div class="temp-bar" id="temp-cpu"><div class="temp-label">CPU</div><div class="temp-value"></div><canvas width="5" height="120"></canvas></div>
     <div class="temp-bar" id="temp-gpu"><div class="temp-label">GPU</div><div class="temp-value"></div><canvas width="5" height="120"></canvas></div>
     <canvas id="dither"></canvas>
@@ -697,6 +704,7 @@ window.wallpaperPropertyListener = {
         if (p.sysenabled) { SysStats.enabled = p.sysenabled.value; SysStats.poll(); }
         if (p.sysport) { SysStats.port = p.sysport.value; SysStats.poll(); }
         if (p.systemps) { SysStats.showTemps = p.systemps.value; SysStats.apply(); }
+        if (p.sysdiag) { SysStats.diagnostic = p.sysdiag.value; SysStats.poll(); }
         if (p.ditherbasssens) D.bassSensitivity = p.ditherbasssens.value;
         if (p.ditherbasscooldown) D.bassCooldownMs = p.ditherbasscooldown.value * 1000;
 
@@ -1454,6 +1462,7 @@ const NowPlaying = {
 const SysStats = {
     enabled: true,
     port: 7457,
+    diagnostic: false, status: 'aguardando a primeira consulta',
     data: null, lastOk: 0, timer: null, built: '',
 
     init() {
@@ -1463,13 +1472,31 @@ const SysStats = {
 
     async poll() {
         if (!this.enabled) { this.apply(); return; }
+        if (this.inflight) return; // uma consulta por vez
+        this.inflight = true;
+        try { await this.pollOnce(); } finally { this.inflight = false; }
+    },
+
+    async pollOnce() {
         const ctl = new AbortController();
-        const to = setTimeout(() => ctl.abort(), 1500);
+        const to = setTimeout(() => ctl.abort(), 4000);
+        const url = `http://localhost:${this.port}/stats`;
         try {
-            const res = await fetch(`http://localhost:${this.port}/stats`, { signal: ctl.signal, cache: 'no-store' });
-            if (res.ok) { this.data = await res.json(); this.lastOk = performance.now(); this.render(); }
-        } catch (e) { /* script desligado: segue com as linhas */ }
+            const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+            if (res.ok) {
+                this.data = await res.json(); this.lastOk = performance.now(); this.render();
+                this.status = `ok · ${url} · ${this.items().length} itens · CPU ${this.data.cpuTemp == null ? 'sem' : this.data.cpuTemp} °C · GPU ${this.data.gpuTemp == null ? 'sem' : this.data.gpuTemp} °C`;
+            } else {
+                this.status = `${url} respondeu ${res.status}`;
+            }
+        } catch (e) {
+            // Script desligado (ou bloqueado): segue com as linhas.
+            this.status = `sem resposta de ${url} (${e.name === 'AbortError' ? 'demorou mais de 4 s' : e.message})`;
+        }
         clearTimeout(to);
+        const diag = document.getElementById('sys-diag');
+        diag.textContent = 'Informações do PC: ' + this.status;
+        diag.style.display = this.diagnostic ? 'block' : 'none';
         this.apply();
     },
 

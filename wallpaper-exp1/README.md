@@ -136,6 +136,14 @@ lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:
    coloque ali um atalho para o `iniciar.cmd`.
 3. Para parar: encerre o processo "Windows PowerShell" no Gerenciador de Tarefas.
 
+**Se o painel não aparecer:**
+
+1. Abra `http://localhost:7457/stats` no navegador. Se aparecer um texto com
+   números (`{"cpu":...}`), o script está rodando. Se der erro de conexão, ele não está.
+2. Rode `stats/testar.cmd`: ele abre o script com janela, mostrando qualquer erro.
+3. No painel do Wallpaper Engine, ligue "Diagnóstico do script": o canto de cima
+   mostra o que o wallpaper está recebendo (ou por que não está).
+
 O script só responde dentro do próprio PC (`http://localhost:7457/stats`), recusa
 pedidos vindos de sites abertos no navegador e não envia nome do computador nem do
 usuário, só os números do painel. Se a porta 7457 estiver ocupada, rode o script com

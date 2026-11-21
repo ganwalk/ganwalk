@@ -388,21 +388,28 @@
 				"condition": "sysenabled.value == true",
 				"order": 41
 			},
+			"sysdiag": {
+				"text": "Diagnóstico do script (mostra o status no canto)",
+				"type": "bool",
+				"value": false,
+				"condition": "sysenabled.value == true",
+				"order": 42
+			},
 			"showtext": {
-				"order": 42,
+				"order": 43,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 43,
+				"order": 44,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 44,
+				"order": 45,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -418,10 +425,10 @@
 				"value": 4,
 				"fraction": true,
 				"precision": 1,
-				"order": 45
+				"order": 46
 			},
 			"textopacity": {
-				"order": 46,
+				"order": 47,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -432,7 +439,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 47,
+				"order": 48,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -442,10 +449,10 @@
 				"text": "Mostrar a música tocando (reprodutor no lugar do texto)",
 				"type": "bool",
 				"value": true,
-				"order": 48
+				"order": 49
 			},
 			"nptexthold": {
-				"order": 49,
+				"order": 50,
 				"text": "Tempo do GANWALK durante a música (s)",
 				"type": "slider",
 				"min": 1,
@@ -464,17 +471,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 50
+				"order": 51
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 51
+				"order": 52
 			},
 			"quality": {
-				"order": 52,
+				"order": 53,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",
