@@ -140,7 +140,10 @@ lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:
 
 1. Abra `http://localhost:7457/stats` no navegador. Se aparecer um texto com
    números (`{"cpu":...}`), o script está rodando. Se der erro de conexão, ele não está.
-2. Rode `stats/testar.cmd`: ele abre o script com janela, mostrando qualquer erro.
+2. Rode `stats/testar.cmd` (com o zip extraído): ele abre o script com janela,
+   mostrando cada passo. Se já houver uma cópia rodando pelo `iniciar.cmd`, ele avisa
+   e mostra o que ela responde. Tudo fica registrado em `stats/ganwalk-stats.log`,
+   inclusive a origem de cada pedido que o wallpaper faz.
 3. No painel do Wallpaper Engine, ligue "Diagnóstico do script": o canto de cima
    mostra o que o wallpaper está recebendo (ou por que não está).
 

@@ -4,10 +4,12 @@
 # lê esses dados e os entrega ao wallpaper por http://localhost:7457/stats,
 # só dentro do próprio PC (não aceita conexões de fora).
 #
-# Privacidade: o endereço responde apenas a páginas abertas a partir de um
-# arquivo local (o wallpaper). Sites abertos no navegador são recusados, então
-# nenhum site consegue ler estas informações. Não envia o nome do computador,
-# do usuário nem nada além dos números abaixo.
+# Privacidade: o endereço responde apenas a páginas locais (o wallpaper, aberto
+# como arquivo ou servido pelo próprio PC). Sites da internet abertos no
+# navegador são recusados, então nenhum site consegue ler estas informações.
+# Não envia o nome do computador, do usuário nem nada além dos números abaixo.
+#
+# Tudo o que acontece fica registrado em ganwalk-stats.log, nesta pasta.
 #
 # Uso: rode iniciar.cmd (ou: powershell -ExecutionPolicy Bypass -File ganwalk-stats.ps1)
 # Compatível com o Windows PowerShell 5.1 que já vem no Windows.
@@ -16,15 +18,30 @@ param([int]$Port = 7457)
 
 $ErrorActionPreference = 'Stop'
 
+$logFile = Join-Path $PSScriptRoot 'ganwalk-stats.log'
+function Log($msg) {
+    $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $msg"
+    Write-Host $line
+    try { Add-Content -Path $logFile -Value $line -Encoding UTF8 } catch {}
+}
+Log "Iniciando (PowerShell $($PSVersionTable.PSVersion), porta $Port)"
+
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 try {
     $listener.Start()
 } catch {
-    Write-Host "Não foi possível abrir a porta $Port. Ela já está em uso? ($($_.Exception.Message))"
+    Log "Não foi possível abrir a porta ${Port}: $($_.Exception.Message)"
+    # Talvez já exista uma cópia rodando (pelo iniciar.cmd). Se sim, mostra o que ela responde.
+    try {
+        $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri "http://localhost:$Port/stats"
+        Log "Já existe uma cópia rodando nessa porta, e ela respondeu: $($r.Content)"
+    } catch {
+        Log "Nenhuma cópia respondeu nessa porta. Outro programa pode estar usando a porta $Port: rode com -Port e outro número e ajuste a porta no painel do wallpaper."
+    }
     exit 1
 }
-Write-Host "GANWALK stats rodando em http://localhost:$Port/stats (Ctrl+C para parar)"
+Log "Rodando em http://localhost:$Port/stats (feche a janela ou Ctrl+C para parar)"
 
 $script:cache = $null
 $script:cacheAt = [datetime]::MinValue
@@ -97,9 +114,12 @@ function Get-Stats {
 }
 
 function Test-Origin($origin) {
-    # Sem Origin, "null" ou file:// = o wallpaper (arquivo local). http(s) = um site: recusa.
+    # Aceita o que é local: sem Origin, "null", file://, esquemas internos do
+    # Wallpaper Engine e páginas servidas pelo próprio PC (localhost/127.0.0.1).
+    # Recusa sites da internet (http/https com qualquer outro endereço).
     if ([string]::IsNullOrEmpty($origin)) { return $true }
     if ($origin -eq 'null') { return $true }
+    if ($origin -match '^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/?$') { return $true }
     if ($origin -like 'http://*' -or $origin -like 'https://*') { return $false }
     return $true
 }
@@ -112,12 +132,15 @@ function Update-Cache {
         $script:cache = Get-Stats | ConvertTo-Json -Depth 4 -Compress
         $script:cacheAt = Get-Date
     } catch {
-        Write-Host "Erro ao ler os dados: $($_.Exception.Message)"
+        Log "Erro ao ler os dados: $($_.Exception.Message)"
     }
 }
-Write-Host "Lendo os dados pela primeira vez..."
+$script:seen = @{}
+Log "Lendo os dados pela primeira vez..."
 Update-Cache
-Write-Host "Pronto. Teste no navegador: http://localhost:$Port/stats"
+Log "Pronto. Dados: $script:cache"
+Log "Teste no navegador: http://localhost:$Port/stats"
+
 
 while ($listener.IsListening) {
     $task = $listener.GetContextAsync()
@@ -129,6 +152,10 @@ while ($listener.IsListening) {
     $res = $ctx.Response
     try {
         $origin = $req.Headers['Origin']
+        if (-not $script:seen.ContainsKey("$origin")) {
+            $script:seen["$origin"] = $true
+            Log "Primeiro pedido vindo de: '$origin' ($(if (Test-Origin $origin) { 'aceito' } else { 'recusado' }))"
+        }
         if (-not (Test-Origin $origin)) {
             $res.StatusCode = 403
             $res.Close()
@@ -160,6 +187,7 @@ while ($listener.IsListening) {
         $res.OutputStream.Write($bytes, 0, $bytes.Length)
         $res.Close()
     } catch {
+        Log "Erro ao responder: $($_.Exception.Message)"
         try { $res.StatusCode = 500; $res.Close() } catch {}
     }
 }
