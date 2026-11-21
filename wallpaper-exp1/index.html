@@ -1485,7 +1485,8 @@ const SysStats = {
             const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
             if (res.ok) {
                 this.data = await res.json(); this.lastOk = performance.now(); this.render();
-                this.status = `ok · ${url} · ${this.items().length} itens · CPU ${this.data.cpuTemp == null ? 'sem' : this.data.cpuTemp} °C · GPU ${this.data.gpuTemp == null ? 'sem' : this.data.gpuTemp} °C`;
+                const tmp = (v, from) => v == null ? 'sem leitura' : `${v} °C (${from || '?'})`;
+                this.status = `ok · ${this.items().length} itens · CPU ${tmp(this.data.cpuTemp, this.data.cpuTempFrom)} · GPU ${tmp(this.data.gpuTemp, this.data.gpuTempFrom)}`;
             } else {
                 this.status = `${url} respondeu ${res.status}`;
             }

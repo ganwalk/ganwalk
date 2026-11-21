@@ -46,14 +46,37 @@ Log "Rodando em http://localhost:$Port/stats (feche a janela ou Ctrl+C para para
 $script:cache = $null
 $script:cacheAt = [datetime]::MinValue
 
-# Temperaturas. O Windows não expõe a da CPU de forma confiável, então:
-#  1. se o LibreHardwareMonitor (ou o OpenHardwareMonitor) estiver aberto, lê os
-#     sensores que ele publica no WMI (CPU e GPU de qualquer marca);
-#  2. GPU NVIDIA: nvidia-smi, que vem com o driver;
-#  3. CPU, último recurso: zona térmica ACPI (costuma exigir administrador e
-#     nem sempre reflete a CPU de verdade).
+# Temperaturas. O Windows não expõe a da CPU de forma confiável, então o
+# script tenta, nesta ordem, e informa de onde veio cada uma (cpuTempFrom,
+# gpuTempFrom):
+#  1. LibreHardwareMonitor (ou OpenHardwareMonitor) aberto: sensores no WMI;
+#  2. LibreHardwareMonitor com o servidor web ligado (Options > Remote Web
+#     Server > Run, porta 8085): lê http://localhost:8085/data.json;
+#  3. GPU NVIDIA: nvidia-smi, que vem com o driver;
+#  4. CPU: contador térmico do Windows (sem administrador). É a zona térmica
+#     da placa-mãe, uma aproximação da CPU;
+#  5. CPU, último recurso: zona térmica ACPI (costuma exigir administrador).
+function ConvertTo-Celsius($text) {
+    if ("$text" -match '(-?\d+(?:[.,]\d+)?)') { return [math]::Round([double]($Matches[1] -replace ',', '.')) }
+    return $null
+}
+
+# Percorre a árvore do data.json do LibreHardwareMonitor.
+function Find-LhmTemps($node, $kind, $out) {
+    $img = "$($node.ImageURL)"
+    $k = $kind
+    if ($img -match 'cpu') { $k = 'cpu' }
+    elseif ($img -match 'nvidia|ati|amd|gpu') { $k = 'gpu' }
+    if ($k -and "$($node.Value)" -match '°C') {
+        [void]$out.Add([pscustomobject]@{ kind = $k; name = "$($node.Text)"; value = (ConvertTo-Celsius $node.Value) })
+    }
+    foreach ($c in @($node.Children)) { if ($c) { $null = Find-LhmTemps $c $k $out } }
+}
+
 function Get-Temps {
-    $cpu = $null; $gpu = $null
+    $cpu = $null; $gpu = $null; $cpuFrom = $null; $gpuFrom = $null
+
+    # 1. WMI do LibreHardwareMonitor / OpenHardwareMonitor
     foreach ($ns in 'root/LibreHardwareMonitor', 'root/OpenHardwareMonitor') {
         try {
             $sensors = @(Get-CimInstance -Namespace $ns -ClassName Sensor -ErrorAction Stop | Where-Object { $_.SensorType -eq 'Temperature' })
@@ -61,27 +84,70 @@ function Get-Temps {
             $cpuS = @($sensors | Where-Object { $_.Identifier -match '/(amdcpu|intelcpu)/' })
             $pick = $cpuS | Where-Object { $_.Name -match 'Package|Tctl|Tdie' } | Select-Object -First 1
             if (-not $pick) { $pick = $cpuS | Sort-Object -Property Value -Descending | Select-Object -First 1 }
-            if ($pick) { $cpu = [math]::Round([double]$pick.Value) }
+            if ($pick) { $cpu = [math]::Round([double]$pick.Value); $cpuFrom = "$ns ($($pick.Name))" }
             $gpuS = @($sensors | Where-Object { $_.Identifier -match '/gpu' })
             $pick = $gpuS | Where-Object { $_.Name -match 'Core' } | Select-Object -First 1
             if (-not $pick) { $pick = $gpuS | Select-Object -First 1 }
-            if ($pick) { $gpu = [math]::Round([double]$pick.Value) }
+            if ($pick) { $gpu = [math]::Round([double]$pick.Value); $gpuFrom = "$ns ($($pick.Name))" }
             break
         } catch {}
     }
+
+    # 2. Servidor web do LibreHardwareMonitor
+    if ($null -eq $cpu -or $null -eq $gpu) {
+        try {
+            $tree = Invoke-RestMethod -Uri 'http://localhost:8085/data.json' -TimeoutSec 2
+            $found = New-Object System.Collections.ArrayList
+            $null = Find-LhmTemps $tree $null $found
+            if ($null -eq $cpu) {
+                $c = @($found | Where-Object { $_.kind -eq 'cpu' -and $null -ne $_.value })
+                $pick = $c | Where-Object { $_.name -match 'Package|Tctl|Tdie' } | Select-Object -First 1
+                if (-not $pick) { $pick = $c | Sort-Object -Property value -Descending | Select-Object -First 1 }
+                if ($pick) { $cpu = $pick.value; $cpuFrom = "LibreHardwareMonitor web ($($pick.name))" }
+            }
+            if ($null -eq $gpu) {
+                $g = @($found | Where-Object { $_.kind -eq 'gpu' -and $null -ne $_.value })
+                $pick = $g | Where-Object { $_.name -match 'Core' } | Select-Object -First 1
+                if (-not $pick) { $pick = $g | Select-Object -First 1 }
+                if ($pick) { $gpu = $pick.value; $gpuFrom = "LibreHardwareMonitor web ($($pick.name))" }
+            }
+        } catch {}
+    }
+
+    # 3. nvidia-smi
     if ($null -eq $gpu -and (Get-Command nvidia-smi -ErrorAction SilentlyContinue)) {
         try {
             $out = & nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits 2>$null | Select-Object -First 1
-            if ($out -match '^\s*(\d+)') { $gpu = [int]$Matches[1] }
+            if ($out -match '^\s*(\d+)') { $gpu = [int]$Matches[1]; $gpuFrom = 'nvidia-smi' }
         } catch {}
     }
+
+    # 4. Contador térmico do Windows (não precisa de administrador)
+    if ($null -eq $cpu) {
+        try {
+            $zones = @(Get-CimInstance -ClassName Win32_PerfFormattedData_Counters_ThermalZoneInformation -ErrorAction Stop)
+            $best = $null
+            foreach ($z in $zones) {
+                # HighPrecisionTemperature vem em décimos de kelvin; Temperature, em kelvin.
+                $k = if ($z.HighPrecisionTemperature) { $z.HighPrecisionTemperature / 10 } else { $z.Temperature }
+                if ($k -gt 200) {
+                    $c = [math]::Round($k - 273.15)
+                    if ($null -eq $best -or $c -gt $best) { $best = $c }
+                }
+            }
+            if ($null -ne $best) { $cpu = $best; $cpuFrom = 'zona térmica do Windows (aproximada)' }
+        } catch {}
+    }
+
+    # 5. Zona térmica ACPI
     if ($null -eq $cpu) {
         try {
             $z = Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction Stop | Select-Object -First 1
-            if ($z) { $cpu = [math]::Round($z.CurrentTemperature / 10 - 273.15) }
+            if ($z) { $cpu = [math]::Round($z.CurrentTemperature / 10 - 273.15); $cpuFrom = 'ACPI (aproximada)' }
         } catch {}
     }
-    @{ cpu = $cpu; gpu = $gpu }
+
+    @{ cpu = $cpu; gpu = $gpu; cpuFrom = $cpuFrom; gpuFrom = $gpuFrom }
 }
 
 function Get-Stats {
@@ -110,6 +176,8 @@ function Get-Stats {
         disks      = $disks
         cpuTemp    = $temps.cpu
         gpuTemp    = $temps.gpu
+        cpuTempFrom = $temps.cpuFrom
+        gpuTempFrom = $temps.gpuFrom
     }
 }
 

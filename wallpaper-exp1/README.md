@@ -114,16 +114,18 @@ música começa, tudo isso sai e as linhas voltam. A troca é em dither.
 ### Temperaturas
 
 O Windows não entrega a temperatura da CPU de forma confiável, então o script tenta,
-nesta ordem:
+nesta ordem, e o "Diagnóstico do script" mostra de onde veio cada uma:
 
-1. **LibreHardwareMonitor** (gratuito, recomendado): se ele estiver aberto, o script
-   lê os sensores de CPU e GPU de qualquer marca. Ele precisa rodar como administrador
-   para ler os sensores; dá para deixá-lo iniciar com o Windows e minimizado nas
-   opções dele. O OpenHardwareMonitor também funciona.
-2. **GPU NVIDIA:** sem o LibreHardwareMonitor, a temperatura da GPU vem do
-   `nvidia-smi`, que já vem com o driver.
-3. **CPU, último recurso:** a zona térmica do Windows, que costuma exigir administrador
-   e nem sempre reflete a CPU de verdade.
+1. **LibreHardwareMonitor** (gratuito, recomendado): aberto como administrador, ele dá
+   a temperatura real da CPU e da GPU de qualquer marca. O script lê os sensores que
+   ele publica no Windows e, se não encontrar, o servidor web dele (em Options, ligue
+   Remote Web Server, porta 8085). Dá para deixá-lo iniciar com o Windows, minimizado.
+2. **GPU NVIDIA:** sem ele, a temperatura da GPU vem do `nvidia-smi`, que já vem com o
+   driver.
+3. **CPU sem ele:** o contador térmico do Windows, que não precisa de administrador.
+   É a zona térmica da placa-mãe, uma aproximação da CPU (costuma ficar abaixo da
+   temperatura real dos núcleos). Alguns PCs não expõem nenhuma zona; aí só com o
+   LibreHardwareMonitor.
 
 Se uma das temperaturas não estiver disponível, a barra dela simplesmente não aparece.
 
