@@ -79,7 +79,7 @@
     #now-playing {
         position: absolute; left: 50%; top: 50%; width: 1040px;
         transform: translate(-50%, -50%) scale(calc(var(--np-scale) * var(--np-pulse)));
-        /* Horizontal: capa | informações | barras do espectro no canto superior direito. */
+        /* Horizontal: capa | informações | espaço das barras diagonais (desenhadas por cima, encostadas na borda). */
         display: grid; grid-template-columns: 96px 1fr 300px; column-gap: 22px; align-items: center;
         padding: 16px 20px; border-radius: 8px;
         background: var(--control-bg); border: 1px solid var(--border-color);
@@ -113,11 +113,13 @@
     #np-track { flex: 1; height: 4px; border-radius: 2px; background: var(--border-color); position: relative; overflow: hidden; }
     #np-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--highlight-color); box-shadow: 0 0 6px var(--highlight-color); }
     #np-time { font-family: 'Silkscreen', monospace; font-size: 11px; white-space: nowrap; }
-    /* Barras do espectro: soltas no canto superior direito do próprio
-       reprodutor (sem caixa), crescendo da direita para a esquerda. Canvas
+    /* Barras do espectro: encostadas na borda do reprodutor (sem margem),
+       ocupam todo o espaço à direita das informações, de cima a baixo, e
+       crescem na diagonal a partir das bordas de cima e da direita. Canvas
        em meia resolução ampliado sem suavização, para o dither ficar nítido. */
     #np-bars {
-        width: 300px; height: 64px; align-self: start; justify-self: end; display: block;
+        position: absolute; top: 0; right: 0; height: 100%; width: 320px; display: block;
+        border-radius: 0 7px 7px 0;
         image-rendering: pixelated; image-rendering: crisp-edges;
     }
 
@@ -181,7 +183,7 @@
                 <div id="np-artist"></div>
                 <div id="np-progress"><div id="np-track"><div id="np-fill"></div></div><span id="np-time"></span></div>
             </div>
-            <canvas id="np-bars" width="150" height="32"></canvas>
+            <canvas id="np-bars" width="160" height="64"></canvas>
         </div>
     </div>
     <canvas id="canvas"></canvas>
@@ -1270,66 +1272,82 @@ const NowPlaying = {
         ctx.putImageData(image, 0, 0);
     },
 
-    // ESPECTRO EM BARRAS
-    // 8 barras (do grave, em cima, ao agudo, embaixo) que crescem da direita
-    // para a esquerda. O preenchimento é dither ordenado com a matriz de Bayer
-    // do portfólio: cheio junto à borda direita e cada vez mais ralo até a
-    // ponta, com a fase da matriz trocando a cada 175 ms (a cintilação) e uma
-    // leve ondulação na densidade, que faz o retículo "respirar".
-    BAR_EDGES: [0, 2, 4, 7, 11, 17, 26, 38, 64], // faixas das 64 bandas do Wallpaper Engine
-    barLevels: new Float32Array(8),
-    barPeaks: new Float32Array(8).fill(0.05),
-    barHold: new Float32Array(8),
+    // ESPECTRO EM BARRAS DIAGONAIS
+    // Faixas paralelas a 45° que nascem nas bordas do reprodutor (a de cima e
+    // a da direita) e avançam para baixo e para a esquerda, ocupando o espaço
+    // ao lado das informações. As faixas do canto respondem ao grave e as das
+    // pontas ao agudo. O preenchimento é dither ordenado com a matriz de Bayer
+    // do portfólio: cheio junto à borda e cada vez mais ralo até a ponta, com a
+    // fase da matriz trocando a cada 175 ms e a densidade ondulando de leve.
+    BAR_THICK: 3,   // espessura da faixa, em células
+    BAR_GAP: 2,     // respiro entre faixas
+    barLevels: null, barPeaks: null, barHold: null,
 
     drawBars(t) {
-        const cvs = document.getElementById('np-bars'), ctx = cvs.getContext('2d');
-        const W = cvs.width, H = cvs.height, N = 8;
-        const rows = H / N, thick = Math.max(1, Math.round(rows * 0.75)); // barra + respiro
-        const spec = Wallpaper.spectrum, sens = Wallpaper.settings.sensitivity;
-        const bands = Wallpaper.bands;
+        const cvs = document.getElementById('np-bars');
+        const box = document.getElementById('now-playing');
+        // Acompanha a altura real do reprodutor (meia resolução).
+        const wantH = Math.max(8, Math.round(box.clientHeight / 2));
+        if (cvs.height !== wantH) cvs.height = wantH;
+        const ctx = cvs.getContext('2d');
+        const W = cvs.width, H = cvs.height, SQ = Math.SQRT2;
 
-        for (let i = 0; i < N; i++) {
+        // Coordenadas: a = distância da borda direita, c = distância do topo.
+        // p = (a - c)/√2 separa as faixas; a origem de cada faixa fica na borda.
+        const pMin = -H / SQ, pMax = W / SQ, period = this.BAR_THICK + this.BAR_GAP;
+        const K = Math.ceil((pMax - pMin) / period);
+        if (!this.barLevels || this.barLevels.length !== K) {
+            this.barLevels = new Float32Array(K); this.barPeaks = new Float32Array(K).fill(0.05); this.barHold = new Float32Array(K);
+        }
+        const pCorner = (0 - pMin) / period;           // faixa que sai exatamente do canto
+        const reach = Math.max(pCorner, K - pCorner);
+        const spec = Wallpaper.spectrum, sens = Wallpaper.settings.sensitivity, bands = Wallpaper.bands;
+
+        for (let k = 0; k < K; k++) {
+            const r = Math.min(1, Math.abs(k + 0.5 - pCorner) / reach); // 0 no canto, 1 nas pontas
             let v;
             if (spec && !Wallpaper.demoMode) {
-                let sum = 0;
-                for (let j = this.BAR_EDGES[i]; j < this.BAR_EDGES[i + 1]; j++) sum += spec[j];
-                v = sum / (this.BAR_EDGES[i + 1] - this.BAR_EDGES[i]);
-                this.barPeaks[i] = Math.max(v, this.barPeaks[i] * 0.996, 0.02);
-                v = Math.sqrt(Math.min(1, v / this.barPeaks[i])) * Math.min(1, v / 0.02);
+                const lo = Math.floor(Math.pow(r, 1.6) * 60), hi = Math.min(64, lo + 4);
+                let sum = 0; for (let j = lo; j < hi; j++) sum += spec[j];
+                v = sum / (hi - lo);
+                this.barPeaks[k] = Math.max(v, this.barPeaks[k] * 0.996, 0.02);
+                v = Math.sqrt(Math.min(1, v / this.barPeaks[k])) * Math.min(1, v / 0.02);
             } else {
-                // Sem espectro (navegador): deriva das três bandas.
-                const k = i / (N - 1);
-                v = (k < 0.5 ? bands.b * (1 - 2 * k) + bands.m * 2 * k : bands.m * (2 - 2 * k) + bands.h * (2 * k - 1)) * 1.2;
-                v *= 0.75 + 0.25 * Math.sin(t * 7 + i * 1.7);
+                v = (r < 0.5 ? bands.b * (1 - 2 * r) + bands.m * 2 * r : bands.m * (2 - 2 * r) + bands.h * (2 * r - 1)) * 1.2;
+                v *= 0.75 + 0.25 * Math.sin(t * 7 + k * 0.7);
             }
-            const target = Math.min(1, v * sens);
-            this.barLevels[i] += (target - this.barLevels[i]) * (target > this.barLevels[i] ? 0.5 : 0.15);
-            // Marcador de pico, que cai devagar.
-            this.barHold[i] = Math.max(this.barLevels[i], this.barHold[i] - 0.006);
+            const target = Math.min(1, v * sens * 0.85);
+            this.barLevels[k] += (target - this.barLevels[k]) * (target > this.barLevels[k] ? 0.5 : 0.15);
+            this.barHold[k] = Math.max(this.barLevels[k], this.barHold[k] - 0.006);
         }
 
         const img = ctx.createImageData(W, H), d = img.data;
-        const fg = Wallpaper.fgThree, r = fg.r * 255, g = fg.g * 255, b = fg.b * 255;
+        const fg = Wallpaper.fgThree, R = fg.r * 255, G = fg.g * 255, B = fg.b * 255;
         const size = DitherWave.MATRIX_SIZE, mask = size - 1, matrix = DitherWave.buildBayer(size);
         const levels = size * size;
         const phase = DitherWave.PHASES[Math.floor(performance.now() / DitherWave.STEP_MS) % DitherWave.PHASES.length];
-        const plot = (x, y) => { const o = (y * W + x) * 4; d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255; };
 
-        for (let i = 0; i < N; i++) {
-            const len = Math.round(this.barLevels[i] * W);
-            const y0 = Math.round(i * rows);
-            const breathe = 0.85 + 0.15 * Math.sin(t * 6 + i * 0.9);
-            for (let y = y0; y < y0 + thick && y < H; y++) {
-                const row = ((y + phase.y) & mask) * size;
-                for (let dx = 0; dx < len; dx++) {
-                    const x = W - 1 - dx;
-                    // Densidade: 100% na borda direita, ~20% na ponta.
-                    const dens = (1 - 0.8 * (dx / Math.max(1, len))) * breathe;
-                    if (dens * levels > matrix[row + ((x + phase.x) & mask)]) plot(x, y);
+        for (let y = 0; y < H; y++) {
+            const row = ((y + phase.y) & mask) * size;
+            for (let x = 0; x < W; x++) {
+                const a = W - 1 - x, c = y;
+                const pp = (a - c) / SQ - pMin;
+                const k = Math.floor(pp / period);
+                if (pp - k * period >= this.BAR_THICK || k < 0 || k >= K) continue;
+                // Quanto da faixa já foi percorrido (0 na borda, 1 no limite oposto).
+                const p0 = (a - c) / SQ;
+                const tMax = p0 >= 0 ? Math.min(H, W - p0 * SQ) : Math.min(W, H + p0 * SQ);
+                const tt = p0 >= 0 ? c : a;
+                const f = tt / Math.max(1, tMax);
+                const lvl = this.barLevels[k];
+                let on = false;
+                if (f < lvl) {
+                    const dens = (1 - 0.8 * (f / Math.max(0.001, lvl))) * (0.85 + 0.15 * Math.sin(t * 6 + k * 0.5));
+                    on = dens * levels > matrix[row + ((x + phase.x) & mask)];
+                } else if (Math.abs(f - this.barHold[k]) * tMax < 0.75) {
+                    on = ((x + y + phase.x) & 1) === 1; // marcador de pico, meia retícula
                 }
-                // Pico: um traço vertical de 1 célula, meio retícula.
-                const hx = W - 1 - Math.round(this.barHold[i] * W);
-                if (hx >= 0 && hx < W - len && ((hx + y + phase.x) & 1)) plot(hx, y);
+                if (on) { const o = (y * W + x) * 4; d[o] = R; d[o + 1] = G; d[o + 2] = B; d[o + 3] = 255; }
             }
         }
         ctx.putImageData(img, 0, 0);
