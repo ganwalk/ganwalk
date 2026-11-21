@@ -57,7 +57,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Eco Profundo, Câmara Etérea, Oscilador de Realidades, Véu Sonoro, Distorção Cósmica | Os controles do site. Não mexem mais no áudio (o som é do sistema), mas dirigem a parte visual como antes: rastro e pulsação, bloom e rastro, giro em Z, apagar a grade, achatar a forma. |
 | Brilho extra (bloom) | Bloom fixo somado ao da Câmara Etérea. |
 | Mostrar icosaedro / grade / ondas / texto | Liga e desliga cada camada. |
-| Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, com a largura exata do "GANWALK". Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
+| Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, de fora a fora na tela. Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
 | Texto, tamanho, opacidade, brilho neon | Personaliza o "GANWALK" do centro. |
 | Resolução de render | 100%, 75% ou 50%. Use 75% ou 50% em monitores 4K ou PCs mais fracos. |
 

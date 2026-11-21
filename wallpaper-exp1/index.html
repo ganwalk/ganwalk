@@ -342,7 +342,7 @@ const Wallpaper = {
         // No site, com o menu recolhido, as ondas sobem para y=-12 e esticam 4x.
         this.waveLinesGroup = new THREE.Group(); this.waveLinesGroup.position.y = -20; this.root.add(this.waveLinesGroup);
         for (let k = -1; k <= 1; k++) {
-            const pts = []; for (let j = 0; j <= 100; j++) pts.push(new THREE.Vector3((j / 100 - 0.5) * 70, k, 0));
+            const pts = []; for (let j = 0; j <= 400; j++) pts.push(new THREE.Vector3((j / 400 - 0.5) * 70, k, 0));
             const g = new THREE.BufferGeometry().setFromPoints(pts); g.setAttribute('initialPosition', g.attributes.position.clone());
             const l = new THREE.Line(g, lm.clone()); this.waveLinesGroup.add(l); this.waveLines.push(l);
         }
@@ -443,13 +443,16 @@ const Wallpaper = {
             // plano da tela em vez de vir em direção à câmera: assim a largura
             // na tela é exatamente a do reprodutor, sem a perspectiva esticar.
             const amp = gap * 0.32;
+            // O grupo é esticado na horizontal; o x em unidades do mundo mantém
+            // o comprimento de onda do site, então cabem mais ondas na tela.
+            const sx = this.waveLinesGroup.scale.x;
             this.waveLines.forEach((l, idx) => {
                 const pos = l.geometry.attributes.position.array;
                 const band = idx === 0 ? b : (idx === 1 ? m : h);
                 const baseY = (idx - 1) * gap * 0.08;
                 const k = idx === 0 ? 1 : (idx === 1 ? 20 / 45 : 15 / 45);
                 for (let i = 0; i < pos.length; i += 3) {
-                    pos[i + 1] = baseY + Math.sin(pos[i] * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * amp * k;
+                    pos[i + 1] = baseY + Math.sin(pos[i] * sx * (0.3 + idx * 0.1) + t * (5 + idx) * dir) * band * amp * k;
                     pos[i + 2] = 0;
                 }
                 l.geometry.attributes.position.needsUpdate = true;
@@ -479,7 +482,7 @@ const Wallpaper = {
     taskbarPx: 48,
 
     // As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor,
-    // o que for mais baixo) e a barra de tarefas, com a largura do "GANWALK".
+    // o que for mais baixo) e a barra de tarefas, de fora a fora na tela.
     // Devolve a altura do vão em unidades da cena.
     layoutWaves() {
         const H = window.innerHeight;
@@ -498,9 +501,8 @@ const Wallpaper = {
         const worldY = (H / 2 - midPx) * unitsPerPx;
         this.waveLinesGroup.position.y = worldY - this.root.position.y;
         // As linhas vão de -35 a 35 (70 unidades): escala para a largura do reprodutor.
-        // Largura do "GANWALK" (já com o pulso de escala do texto).
-        const textWidth = document.getElementById('main-text').getBoundingClientRect().width;
-        const widthUnits = textWidth * unitsPerPx;
+        // De fora a fora na tela.
+        const widthUnits = window.innerWidth * unitsPerPx;
         this.waveLinesGroup.scale.set(widthUnits / 70, 1, 1);
         return gapPx * unitsPerPx;
     },
