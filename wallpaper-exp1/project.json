@@ -1,6 +1,6 @@
 {
 	"title": "GANWALK — Exp I (Visualizer)",
-	"description": "A Exp I do site do GANWALK como wallpaper: icosaedro, grade e ondas reagindo ao som que o computador está tocando. Arraste o icosaedro para girá-lo.",
+	"description": "A Exp I do site do GANWALK como wallpaper: icosaedro, grade e ondas reagindo ao som que o computador está tocando. O icosaedro segue o mouse.",
 	"file": "index.html",
 	"preview": "preview.jpg",
 	"type": "web",
@@ -324,14 +324,25 @@
 				"type": "bool",
 				"value": true
 			},
+			"mousefollow": {
+				"text": "Icosaedro segue o mouse",
+				"type": "slider",
+				"min": 0,
+				"max": 3,
+				"value": 1,
+				"fraction": true,
+				"precision": 1,
+				"condition": "showshape.value == true",
+				"order": 34
+			},
 			"showgrid": {
-				"order": 34,
+				"order": 35,
 				"text": "Mostrar grade",
 				"type": "bool",
 				"value": true
 			},
 			"showwaves": {
-				"order": 35,
+				"order": 36,
 				"text": "Mostrar ondas",
 				"type": "bool",
 				"value": true
@@ -343,23 +354,23 @@
 				"max": 120,
 				"value": 48,
 				"condition": "showwaves.value == true",
-				"order": 36
+				"order": 37
 			},
 			"showtext": {
-				"order": 37,
+				"order": 38,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 38,
+				"order": 39,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 39,
+				"order": 40,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -368,7 +379,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textopacity": {
-				"order": 40,
+				"order": 41,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -379,7 +390,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 41,
+				"order": 42,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -389,7 +400,7 @@
 				"text": "Mostrar a música tocando (troca com o texto no pulso)",
 				"type": "bool",
 				"value": true,
-				"order": 42
+				"order": 43
 			},
 			"npholdafter": {
 				"text": "Tempo do reprodutor após o pulso (s)",
@@ -400,7 +411,7 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "npenabled.value == true",
-				"order": 43
+				"order": 44
 			},
 			"npsize": {
 				"text": "Tamanho do reprodutor",
@@ -411,17 +422,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 44
+				"order": 45
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 45
+				"order": 46
 			},
 			"quality": {
-				"order": 46,
+				"order": 47,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",

@@ -14,7 +14,7 @@ reproduzindo** (Spotify, YouTube, jogos…).
    `index.html`.)
 3. Toque qualquer música. Se a cena não reagir, confira nas **Configurações** do
    Wallpaper Engine o dispositivo de áudio usado para capturar o som do sistema (tem que
-   ser a saída que você está ouvindo). Para arrastar o icosaedro, a interação com o mouse
+   ser a saída que você está ouvindo). Para o icosaedro seguir o mouse, a interação com o mouse
    precisa estar ligada nas configurações.
 
 Tudo roda localmente (Three.js r128 e as fontes Astloch, Inter e Silkscreen estão em `lib/` e `fonts/`), então
@@ -57,7 +57,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Eco Profundo, Câmara Etérea, Oscilador de Realidades, Véu Sonoro, Distorção Cósmica | Os controles do site. Não mexem mais no áudio (o som é do sistema), mas dirigem a parte visual como antes: rastro e pulsação, bloom e rastro, giro em Z, apagar a grade, achatar a forma. |
 | Brilho extra (bloom) | Bloom fixo somado ao da Câmara Etérea. |
 | Mostrar icosaedro / grade / ondas / texto | Liga e desliga cada camada. |
-| Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, com a largura exata do reprodutor. Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
+| Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, com a largura exata do "GANWALK". Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
 | Texto, tamanho, opacidade, brilho neon | Personaliza o "GANWALK" do centro. |
 | Resolução de render | 100%, 75% ou 50%. Use 75% ou 50% em monitores 4K ou PCs mais fracos. |
 
@@ -91,8 +91,10 @@ em vez de ter uma borda lisa. Fora da onda, nada disso roda.
 
 ## Interação
 
-Arraste o icosaedro para girá-lo. Um arrasto rápido na horizontal faz a forma inflar,
-como acontecia ao "arranhar" a música no site.
+O icosaedro segue o mouse, sem precisar clicar: a velocidade do movimento vira giro
+(com inércia) e a posição do cursor inclina a forma na direção dele. Um movimento
+rápido na horizontal faz a forma inflar, como acontecia ao "arranhar" a música no
+site. A intensidade fica em "Icosaedro segue o mouse" (0 desliga).
 
 ## Arquivos
 
