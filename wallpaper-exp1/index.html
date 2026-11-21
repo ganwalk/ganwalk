@@ -639,7 +639,7 @@ window.wallpaperPropertyListener = {
 
         const N = NowPlaying;
         if (p.npenabled) N.enabled = p.npenabled.value;
-        if (p.npholdafter) N.holdAfter = p.npholdafter.value;
+        if (p.nptexthold) N.textHold = p.nptexthold.value;
         if (p.npsize) N.boxSize = p.npsize.value;
         if (p.npprogress) N.showProgress = p.npprogress.value;
         if (p.taskbar) W.taskbarPx = p.taskbar.value;
@@ -1050,11 +1050,10 @@ const DitherFade = {
  *
  * Lê a música que o computador está tocando pela integração de mídia do
  * Wallpaper Engine (Spotify, Tidal, navegador... qualquer app que apareça
- * no controle de mídia do Windows). Enquanto ela toca, a cada pulso de
- * dither o "GANWALK" vira o reprodutor logo antes da onda sair do
- * icosaedro, e volta logo depois que ela passa. O reprodutor tem capa,
- * título, artista, progresso e um espectro em barras com dither.
- * Música nova (ou o começo de uma) também dispara um pulso.
+ * no controle de mídia do Windows). Enquanto ela toca, o reprodutor ocupa
+ * o lugar do "GANWALK"; a cada pulso de dither o "GANWALK" volta logo antes
+ * da onda sair do icosaedro, fica 4 s e o reprodutor retorna. O reprodutor
+ * tem capa, título, artista, progresso e um espectro em barras com dither.
  *
  * Toda troca (texto ↔ reprodutor, música nova, pausa) passa pelo DitherFade.
  * A capa também passa pelo dither do portfólio (ditherFrame), cintilando.
@@ -1114,6 +1113,8 @@ const NowPlaying = {
     isPlaying() { return this.enabled && this.media.state === this.PLAYING() && !!this.media.title; },
 
     // Reavalia o estado (música tocando ou não, configurações mudaram).
+    // Com música tocando, o reprodutor é a tela principal; o "GANWALK" só
+    // aparece no pulso (ver beforePulse). Sem música, o centro é do texto.
     update() {
         const text = document.getElementById('main-text');
         const box = document.getElementById('now-playing');
@@ -1122,13 +1123,8 @@ const NowPlaying = {
 
         if (playing) {
             clearTimeout(this.stopTimer); this.stopTimer = null;
-            if (!this.playing) {
-                this.playing = true;
-                this.fillBox();
-                // A música começou: um pulso apresenta o reprodutor.
-                if (showText) DitherWave.request(); else this.swapTo('box');
-            } else if (!showText && this.showing !== 'box') this.swapTo('box');
-            else if (showText && this.showing === 'box' && !this.inPulse) this.swapTo('text');
+            if (!this.playing) { this.playing = true; this.fillBox(); this.swapTo('box'); }
+            else if (this.showing !== 'box' && !this.inPulse) this.swapTo('box');
             return;
         }
         // Pausou ou parou: espera um pouco (troca de faixa às vezes passa por
@@ -1138,6 +1134,7 @@ const NowPlaying = {
                 this.stopTimer = null;
                 if (this.isPlaying()) return;
                 this.playing = false;
+                this.inPulse = false;
                 clearTimeout(this.holdTimer);
                 this.swapTo('text');
             }, 1500);
@@ -1152,37 +1149,37 @@ const NowPlaying = {
     trackChanged() {
         if (!this.isPlaying()) return;
         if (!this.playing) { this.update(); return; }
-        if (this.showing === 'box' && !Wallpaper.settings.showText) {
-            this.swapTo('box', true); // reprodutor fixo: troca a faixa em dither
-        } else {
-            this.fillBox();
-            DitherWave.request(); // música nova: um pulso apresenta a faixa
-        }
+        // Música nova: com o reprodutor na tela, ele se desfaz em dither e
+        // volta com a faixa nova; se o "GANWALK" estiver no pulso, a faixa
+        // nova já aparece quando o reprodutor voltar.
+        if (this.showing === 'box' && !this.inPulse) this.swapTo('box', true);
+        else this.fillBox();
     },
 
-    // O pulso só troca o centro quando há música e o "GANWALK" está à mostra.
+    // O pulso troca o centro quando há música e o reprodutor está à mostra.
     wantsSwap() {
-        return this.playing && this.isPlaying() && Wallpaper.settings.showText && this.showing === 'text';
+        return this.playing && this.isPlaying() && Wallpaper.settings.showText && this.showing === 'box' && !this.inPulse;
     },
 
     inPulse: false,
     holdTimer: null,
-    holdAfter: 0.6, // segundos que o reprodutor fica depois que a onda passa
+    textHold: 4, // segundos que o "GANWALK" fica na tela durante a música
 
+    // Logo antes da onda: o reprodutor se desfaz e o "GANWALK" entra. Ele
+    // fica `textHold` segundos (contando de quando aparece por inteiro) e o
+    // reprodutor volta, tudo em dither.
     beforePulse() {
         this.inPulse = true;
         clearTimeout(this.holdTimer);
-        return this.swapTo('box', false, 260);
+        return this.swapTo('text', false, 260).then(() => {
+            this.holdTimer = setTimeout(() => {
+                this.inPulse = false;
+                if (this.playing && this.isPlaying()) this.swapTo('box');
+            }, this.textHold * 1000);
+        });
     },
 
-    afterPulse() {
-        if (!this.inPulse) return;
-        clearTimeout(this.holdTimer);
-        this.holdTimer = setTimeout(() => {
-            this.inPulse = false;
-            if (Wallpaper.settings.showText || !this.playing) this.swapTo('text');
-        }, this.holdAfter * 1000);
-    },
+    afterPulse() { /* a volta é pelo tempo do GANWALK (textHold), não pelo fim da onda */ },
 
     swapTo(target, refresh = false, dur = DitherFade.DURATION) {
         this.busy = this.busy.then(async () => {

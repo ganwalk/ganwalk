@@ -48,8 +48,8 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Tamanho do pixel / Intensidade do retículo | O tamanho de cada ponto e quanto o fundo escuro vira pontilhado. |
 | Cores do dither | "Duotone" usa as cores do tema. "Máscara de cor" é igual ao Playground do portfólio: cor original nos pontos acesos, preto no resto. |
 | Origem da onda | Do icosaedro (padrão) ou, se preferir uma faixa reta, da esquerda, da direita, de cima ou na diagonal. |
-| Mostrar a música tocando | Enquanto uma música toca no computador, a cada pulso de dither o "GANWALK" vira o reprodutor logo antes da onda sair do icosaedro, e volta logo depois que ela passa. Música nova também dispara um pulso. |
-| Tempo do reprodutor após o pulso | Quanto o reprodutor fica na tela depois que a onda passa (0,6 s por padrão). |
+| Mostrar a música tocando | Enquanto uma música toca no computador, o reprodutor ocupa o lugar do "GANWALK". A cada pulso de dither, o "GANWALK" volta logo antes da onda sair do icosaedro, fica 4 segundos e o reprodutor retorna. Música nova troca o reprodutor em dither. |
+| Tempo do GANWALK durante a música | Quanto tempo o "GANWALK" fica na tela a cada pulso enquanto a música toca (4 s por padrão). |
 | Tamanho do reprodutor / barra de progresso | Escala do reprodutor e a barra de progresso (só aparece se o player informar a posição). |
 | Sensibilidade ao som | Multiplica a reação ao áudio (0–3). |
 | Ganho automático | Normaliza o volume. Desligue para que músicas baixas mexam menos. |

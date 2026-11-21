@@ -416,21 +416,21 @@
 				"condition": "showtext.value == true"
 			},
 			"npenabled": {
-				"text": "Mostrar a música tocando (troca com o texto no pulso)",
+				"text": "Mostrar a música tocando (reprodutor no lugar do texto)",
 				"type": "bool",
 				"value": true,
 				"order": 45
 			},
-			"npholdafter": {
-				"text": "Tempo do reprodutor após o pulso (s)",
+			"nptexthold": {
+				"order": 46,
+				"text": "Tempo do GANWALK durante a música (s)",
 				"type": "slider",
-				"min": 0,
-				"max": 8,
-				"value": 0.6,
+				"min": 1,
+				"max": 15,
+				"value": 4,
 				"fraction": true,
 				"precision": 1,
-				"condition": "npenabled.value == true",
-				"order": 46
+				"condition": "npenabled.value == true"
 			},
 			"npsize": {
 				"text": "Tamanho do reprodutor",
