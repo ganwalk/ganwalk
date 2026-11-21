@@ -59,6 +59,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Mostrar icosaedro / grade / ondas / texto | Liga e desliga cada camada. |
 | Altura da barra de tarefas | As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor) e a barra de tarefas, de fora a fora na tela. Ajuste se a sua barra for maior, menor ou estiver oculta (0). |
 | Texto, tamanho, opacidade, brilho neon | Personaliza o "GANWALK" do centro. |
+| Descer o texto | Desce o "GANWALK" (e o reprodutor, que ocupa o mesmo lugar) sem mexer nas três linhas. 4% da altura da tela por padrão. |
 | Resolução de render | 100%, 75% ou 50%. Use 75% ou 50% em monitores 4K ou PCs mais fracos. |
 
 O limite de FPS e a pausa (quando um app fica em tela cheia) seguem as configurações do

@@ -399,7 +399,7 @@ const Wallpaper = {
 
         const dVal = this.fx.delay, rVal = this.fx.reverb, odVal = this.fx.overdrive, cVal = this.fx.chorus;
 
-        document.getElementById('slot').style.transform = `translateY(${this.textShiftPx}px)`;
+        document.getElementById('slot').style.transform = `translateY(${this.textShiftPx + this.textDropPx()}px)`;
         document.getElementById('main-text').style.transform = `scale(${1 + avg * 0.05 * dir})`;
         NowPlaying.frame(b, m, h, t, dir);
         document.documentElement.style.setProperty('--pulse', Math.min(1, b).toFixed(3));
@@ -480,6 +480,8 @@ const Wallpaper = {
     textSize: 10,
     textShiftPx: 0,
     taskbarPx: 48,
+    textDrop: 4, // % da altura da tela que o "GANWALK" (e o reprodutor) desce, sem mexer nas linhas
+    textDropPx() { return this.textDrop / 100 * window.innerHeight; },
 
     // As três linhas ficam no meio do vão entre o "GANWALK" (ou o reprodutor,
     // o que for mais baixo) e a barra de tarefas, de fora a fora na tela.
@@ -487,7 +489,10 @@ const Wallpaper = {
     layoutWaves() {
         const H = window.innerHeight;
         const unitsPerPx = 100 * Math.tan(THREE.MathUtils.degToRad(37.5)) / H; // altura visível em z=0 / altura da tela
-        const slot = document.getElementById('slot').getBoundingClientRect();
+        // As linhas são calculadas a partir da posição do texto ANTES do
+        // "Descer o GANWALK", para ficarem no mesmo lugar quando ele desce.
+        const r = document.getElementById('slot').getBoundingClientRect(), drop = this.textDropPx();
+        const slot = { top: r.top - drop, bottom: r.bottom - drop, height: r.height };
         const box = document.getElementById('now-playing');
         const npScale = window.innerWidth / 1920 * NowPlaying.boxSize;
         const slotMid = slot.top + slot.height / 2;
@@ -631,6 +636,7 @@ window.wallpaperPropertyListener = {
         if (p.npprogress) N.showProgress = p.npprogress.value;
         if (p.taskbar) W.taskbarPx = p.taskbar.value;
         if (p.mousefollow) W.mouseFollow = p.mousefollow.value;
+        if (p.textdrop) W.textDrop = p.textdrop.value;
         if (p.ditherbasssens) D.bassSensitivity = p.ditherbasssens.value;
         if (p.ditherbasscooldown) D.bassCooldownMs = p.ditherbasscooldown.value * 1000;
 

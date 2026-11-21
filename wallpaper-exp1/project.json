@@ -378,8 +378,18 @@
 				"value": 10,
 				"condition": "showtext.value == true"
 			},
+			"textdrop": {
+				"text": "Descer o texto (% da tela, as linhas ficam onde estão)",
+				"type": "slider",
+				"min": 0,
+				"max": 15,
+				"value": 4,
+				"fraction": true,
+				"precision": 1,
+				"order": 41
+			},
 			"textopacity": {
-				"order": 41,
+				"order": 42,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -390,7 +400,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 42,
+				"order": 43,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -400,7 +410,7 @@
 				"text": "Mostrar a música tocando (troca com o texto no pulso)",
 				"type": "bool",
 				"value": true,
-				"order": 43
+				"order": 44
 			},
 			"npholdafter": {
 				"text": "Tempo do reprodutor após o pulso (s)",
@@ -411,7 +421,7 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "npenabled.value == true",
-				"order": 44
+				"order": 45
 			},
 			"npsize": {
 				"text": "Tamanho do reprodutor",
@@ -422,17 +432,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 45
+				"order": 46
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 46
+				"order": 47
 			},
 			"quality": {
-				"order": 47,
+				"order": 48,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",
