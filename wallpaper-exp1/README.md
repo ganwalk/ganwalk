@@ -140,11 +140,18 @@ lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:
 
 **Se o painel não aparecer:**
 
+O jeito mais rápido é dar dois cliques em `stats/diagnostico.cmd`. Ele verifica se o
+script está rodando, testa o endereço, mede quanto tempo cada leitura de sensor leva,
+mostra as últimas linhas do log e copia tudo para a área de transferência.
+
+Ou, passo a passo:
+
 1. Abra `http://localhost:7457/stats` no navegador. Se aparecer um texto com
    números (`{"cpu":...}`), o script está rodando. Se der erro de conexão, ele não está.
 2. Rode `stats/testar.cmd` (com o zip extraído): ele abre o script com janela,
    mostrando cada passo. Se já houver uma cópia rodando pelo `iniciar.cmd`, ele avisa
-   e mostra o que ela responde. Tudo fica registrado em `stats/ganwalk-stats.log`,
+   e mostra o que ela responde. Tudo fica registrado em `stats/ganwalk-stats.log`
+   (ou em `%LOCALAPPDATA%\ganwalk\`, se a pasta estiver em `C:\Program Files`),
    inclusive a origem de cada pedido que o wallpaper faz.
 3. No painel do Wallpaper Engine, ligue "Diagnóstico do script": o canto de cima
    mostra o que o wallpaper está recebendo (ou por que não está).
@@ -162,7 +169,7 @@ wallpaper-exp1/
 ├── index.html     # a cena + leitura do áudio do sistema + propriedades
 ├── project.json   # manifesto do Wallpaper Engine (tipo web, áudio ligado, propriedades)
 ├── preview.jpg    # miniatura mostrada no Wallpaper Engine / Workshop
-├── stats/         # script do Windows que entrega as informações do PC ao wallpaper
+├── stats/         # script do Windows que entrega as informações do PC ao wallpaper (+ diagnostico.cmd)
 ├── lib/           # Three.js r128 + EffectComposer/UnrealBloomPass
 └── fonts/         # Astloch Bold, Inter e Silkscreen (SIL OFL, ver fonts/OFL-*.txt)
 ```

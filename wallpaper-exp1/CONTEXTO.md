@@ -27,7 +27,8 @@ wallpaper-exp1/
 ├── stats/
 │   ├── ganwalk-stats.ps1   # servidor local com informações do PC (PowerShell 5.1)
 │   ├── iniciar.cmd         # roda o script escondido
-│   └── testar.cmd          # roda o script com janela; log em stats/ganwalk-stats.log
+│   ├── testar.cmd          # roda o script com janela; log em stats/ganwalk-stats.log
+│   └── diagnostico.cmd/.ps1 # testa tudo e copia um relatório (o log cai em %LOCALAPPDATA%\ganwalk se a pasta não aceitar gravação)
 ├── lib/             # Three.js r128 + EffectComposer/UnrealBloomPass (locais, sem CDN)
 └── fonts/           # Astloch Bold, Inter (variável), Silkscreen + licenças OFL
 ```

@@ -11,5 +11,6 @@ if not exist "%~dp0ganwalk-stats.ps1" (
 )
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0ganwalk-stats.ps1"
 echo.
-echo O script terminou. O registro completo esta em %~dp0ganwalk-stats.log
+echo O script terminou. O registro esta em %~dp0ganwalk-stats.log
+echo (ou em %LOCALAPPDATA%\ganwalk\ganwalk-stats.log, se esta pasta nao aceitar gravacao).
 pause
