@@ -14,7 +14,8 @@
 # entrega esse resultado, na hora. Algumas leituras do Windows levam vários
 # segundos; assim elas nunca atrasam a resposta.
 #
-# Tudo o que acontece fica registrado em ganwalk-stats.log, nesta pasta.
+# Tudo o que acontece fica registrado em ganwalk-stats.log, nesta pasta (ou em
+# %LOCALAPPDATA%\ganwalk, se esta pasta não aceitar gravação).
 #
 # Uso: rode iniciar.cmd (ou: powershell -ExecutionPolicy Bypass -File ganwalk-stats.ps1)
 # Compatível com o Windows PowerShell 5.1 que já vem no Windows.
@@ -23,7 +24,16 @@ param([int]$Port = 7457)
 
 $ErrorActionPreference = 'Stop'
 
+# O log fica ao lado do script; se a pasta não aceitar gravação (por exemplo,
+# dentro de C:\Program Files), vai para %LOCALAPPDATA%\ganwalk.
 $logFile = Join-Path $PSScriptRoot 'ganwalk-stats.log'
+try {
+    Add-Content -Path $logFile -Value '' -Encoding UTF8
+} catch {
+    $dir = Join-Path $env:LOCALAPPDATA 'ganwalk'
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $logFile = Join-Path $dir 'ganwalk-stats.log'
+}
 function Log($msg) {
     $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $msg"
     Write-Host $line
