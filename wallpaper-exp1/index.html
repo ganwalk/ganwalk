@@ -1468,6 +1468,7 @@ const SysStats = {
     init() {
         this.poll();
         this.timer = setInterval(() => this.poll(), 3000);
+        setInterval(() => this.updateDiag(), 500);
     },
 
     async poll() {
@@ -1495,10 +1496,18 @@ const SysStats = {
             this.status = `sem resposta de ${url} (${e.name === 'AbortError' ? 'demorou mais de 4 s' : e.message})`;
         }
         clearTimeout(to);
-        const diag = document.getElementById('sys-diag');
-        diag.textContent = 'Informações do PC: ' + this.status;
-        diag.style.display = this.diagnostic ? 'block' : 'none';
+        this.updateDiag();
         this.apply();
+    },
+
+    // Linha de diagnóstico: status do script e o som que o wallpaper está
+    // captando agora (bruto, antes do ganho automático, e depois dele).
+    updateDiag() {
+        const diag = document.getElementById('sys-diag');
+        diag.style.display = this.diagnostic ? 'block' : 'none';
+        if (!this.diagnostic) return;
+        const r = Wallpaper.rawBands, b = Wallpaper.bands, f = v => v.toFixed(3);
+        diag.textContent = `Informações do PC: ${this.status}  ·  Som captado: grave ${f(r.b)} médio ${f(r.m)} agudo ${f(r.h)} (na cena: ${f(b.b)} / ${f(b.m)} / ${f(b.h)})`;
     },
 
     available() { return this.enabled && this.data && performance.now() - this.lastOk < 10000; },
