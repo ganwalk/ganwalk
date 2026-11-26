@@ -28,6 +28,7 @@ wallpaper-exp1/
 │   ├── ganwalk-stats.ps1   # servidor local com informações do PC (PowerShell 5.1)
 │   ├── iniciar.cmd         # roda o script escondido
 │   ├── instalar-inicializacao.cmd / remover-inicializacao.cmd  # atalho na pasta Inicializar (inicializacao.ps1)
+│   ├── vigia.ps1           # roda o script só enquanto o Wallpaper Engine (wallpaper32/64.exe) está aberto
 │   ├── testar.cmd          # roda o script com janela; log em stats/ganwalk-stats.log
 │   └── diagnostico.cmd/.ps1 # testa tudo e copia um relatório (o log cai em %LOCALAPPDATA%\ganwalk se a pasta não aceitar gravação)
 ├── lib/             # Three.js r128 + EffectComposer/UnrealBloomPass (locais, sem CDN)

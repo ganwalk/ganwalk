@@ -134,10 +134,11 @@ lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:
 
 1. Dê dois cliques em `stats/iniciar.cmd`. Ele roda o `ganwalk-stats.ps1` escondido,
    sem janela.
-2. Para rodar sozinho sempre que o PC ligar: dê dois cliques em
-   `stats/instalar-inicializacao.cmd`. Ele cria um atalho na pasta "Inicializar" do
-   Windows (não precisa de administrador) que roda o script escondido a cada login, e
-   já o inicia na hora. Para desfazer: `stats/remover-inicializacao.cmd`.
+2. Para rodar sozinho junto com o Wallpaper Engine: dê dois cliques em
+   `stats/instalar-inicializacao.cmd`. Ele coloca na pasta "Inicializar" do Windows
+   (sem administrador) um vigia escondido (`stats/vigia.ps1`) que espera o Wallpaper
+   Engine abrir, sobe o script, e o encerra quando o Wallpaper Engine fecha. O vigia já
+   começa na hora. Para desfazer (e parar tudo): `stats/remover-inicializacao.cmd`.
 3. Para parar: encerre o processo "Windows PowerShell" no Gerenciador de Tarefas.
 
 **Se o painel não aparecer:**
