@@ -257,30 +257,20 @@
 				"type": "bool",
 				"value": true
 			},
-			"noisegate": {
-				"text": "Ignorar sons muito baixos (portão de ruído)",
-				"type": "slider",
-				"min": 0,
-				"max": 0.1,
-				"value": 0.02,
-				"fraction": true,
-				"precision": 3,
-				"order": 26
-			},
 			"reverse": {
-				"order": 27,
+				"order": 26,
 				"text": "Girar ao contrário",
 				"type": "bool",
 				"value": false
 			},
 			"idlemotion": {
-				"order": 28,
+				"order": 27,
 				"text": "Movimento no silêncio",
 				"type": "bool",
 				"value": true
 			},
 			"delay": {
-				"order": 29,
+				"order": 28,
 				"text": "Eco Profundo",
 				"type": "slider",
 				"min": 0,
@@ -290,7 +280,7 @@
 				"precision": 2
 			},
 			"reverb": {
-				"order": 30,
+				"order": 29,
 				"text": "Câmara Etérea (Rastro)",
 				"type": "slider",
 				"min": 0,
@@ -300,7 +290,7 @@
 				"precision": 2
 			},
 			"chorus": {
-				"order": 31,
+				"order": 30,
 				"text": "Oscilador de Realidades",
 				"type": "slider",
 				"min": 0,
@@ -310,7 +300,7 @@
 				"precision": 2
 			},
 			"filter": {
-				"order": 32,
+				"order": 31,
 				"text": "Véu Sonoro",
 				"type": "slider",
 				"min": 0,
@@ -318,7 +308,7 @@
 				"value": 0
 			},
 			"overdrive": {
-				"order": 33,
+				"order": 32,
 				"text": "Distorção Cósmica",
 				"type": "slider",
 				"min": 0,
@@ -328,7 +318,7 @@
 				"precision": 2
 			},
 			"bloom": {
-				"order": 34,
+				"order": 33,
 				"text": "Brilho extra (bloom)",
 				"type": "slider",
 				"min": 0,
@@ -338,7 +328,7 @@
 				"precision": 2
 			},
 			"showshape": {
-				"order": 35,
+				"order": 34,
 				"text": "Mostrar icosaedro",
 				"type": "bool",
 				"value": true
@@ -352,26 +342,19 @@
 				"fraction": true,
 				"precision": 1,
 				"condition": "showshape.value == true",
-				"order": 36
+				"order": 35
 			},
 			"showgrid": {
-				"order": 37,
+				"order": 36,
 				"text": "Mostrar grade",
 				"type": "bool",
 				"value": true
 			},
 			"showwaves": {
-				"order": 38,
+				"order": 37,
 				"text": "Mostrar ondas",
 				"type": "bool",
 				"value": true
-			},
-			"wavesdither": {
-				"text": "Linhas em dither",
-				"type": "bool",
-				"value": true,
-				"condition": "showwaves.value == true",
-				"order": 39
 			},
 			"taskbar": {
 				"text": "Altura da barra de tarefas (px)",
@@ -380,13 +363,13 @@
 				"max": 120,
 				"value": 48,
 				"condition": "showwaves.value == true",
-				"order": 40
+				"order": 38
 			},
 			"sysenabled": {
 				"text": "Mostrar informações do PC sem música (precisa do script)",
 				"type": "bool",
 				"value": true,
-				"order": 41
+				"order": 39
 			},
 			"sysport": {
 				"text": "Porta do script de informações",
@@ -396,37 +379,37 @@
 				"value": 7457,
 				"editable": true,
 				"condition": "sysenabled.value == true",
-				"order": 42
+				"order": 40
 			},
 			"systemps": {
 				"text": "Mostrar temperatura da CPU e da GPU",
 				"type": "bool",
 				"value": true,
 				"condition": "sysenabled.value == true",
-				"order": 43
+				"order": 41
 			},
 			"sysdiag": {
 				"text": "Diagnóstico do script (mostra o status no canto)",
 				"type": "bool",
 				"value": false,
 				"condition": "sysenabled.value == true",
-				"order": 44
+				"order": 42
 			},
 			"showtext": {
-				"order": 45,
+				"order": 43,
 				"text": "Mostrar texto",
 				"type": "bool",
 				"value": true
 			},
 			"customtext": {
-				"order": 46,
+				"order": 44,
 				"text": "Texto",
 				"type": "textinput",
 				"value": "GANWALK",
 				"condition": "showtext.value == true"
 			},
 			"textsize": {
-				"order": 47,
+				"order": 45,
 				"text": "Tamanho do texto",
 				"type": "slider",
 				"min": 2,
@@ -442,10 +425,10 @@
 				"value": 4,
 				"fraction": true,
 				"precision": 1,
-				"order": 48
+				"order": 46
 			},
 			"textopacity": {
-				"order": 49,
+				"order": 47,
 				"text": "Opacidade do texto",
 				"type": "slider",
 				"min": 0,
@@ -456,7 +439,7 @@
 				"condition": "showtext.value == true"
 			},
 			"textglow": {
-				"order": 50,
+				"order": 48,
 				"text": "Brilho neon no texto",
 				"type": "bool",
 				"value": true,
@@ -466,10 +449,10 @@
 				"text": "Mostrar a música tocando (reprodutor no lugar do texto)",
 				"type": "bool",
 				"value": true,
-				"order": 51
+				"order": 49
 			},
 			"nptexthold": {
-				"order": 52,
+				"order": 50,
 				"text": "Tempo do GANWALK durante a música (s)",
 				"type": "slider",
 				"min": 1,
@@ -488,17 +471,17 @@
 				"fraction": true,
 				"precision": 2,
 				"condition": "npenabled.value == true",
-				"order": 53
+				"order": 51
 			},
 			"npprogress": {
 				"text": "Mostrar barra de progresso",
 				"type": "bool",
 				"value": true,
 				"condition": "npenabled.value == true",
-				"order": 54
+				"order": 52
 			},
 			"quality": {
-				"order": 55,
+				"order": 53,
 				"text": "Resolução de render",
 				"type": "combo",
 				"value": "1",
