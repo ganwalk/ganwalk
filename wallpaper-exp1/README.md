@@ -134,8 +134,10 @@ lê esses dados é um script pequeno do Windows que vem na pasta `stats/`:
 
 1. Dê dois cliques em `stats/iniciar.cmd`. Ele roda o `ganwalk-stats.ps1` escondido,
    sem janela.
-2. Para rodar sempre que o PC ligar: aperte Win+R, digite `shell:startup`, dê Enter e
-   coloque ali um atalho para o `iniciar.cmd`.
+2. Para rodar sozinho sempre que o PC ligar: dê dois cliques em
+   `stats/instalar-inicializacao.cmd`. Ele cria um atalho na pasta "Inicializar" do
+   Windows (não precisa de administrador) que roda o script escondido a cada login, e
+   já o inicia na hora. Para desfazer: `stats/remover-inicializacao.cmd`.
 3. Para parar: encerre o processo "Windows PowerShell" no Gerenciador de Tarefas.
 
 **Se o painel não aparecer:**
