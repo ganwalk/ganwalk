@@ -53,6 +53,7 @@ o wallpaper usa um sinal sintético só para a cena não ficar parada.
 | Tamanho do reprodutor / barra de progresso | Escala do reprodutor e a barra de progresso (só aparece se o player informar a posição). |
 | Sensibilidade ao som | Multiplica a reação ao áudio (0–3). |
 | Ganho automático | Normaliza o volume. Desligue para que músicas baixas mexam menos. |
+| Linhas em dither | As três linhas são desenhadas em meia resolução e passam pela matriz de Bayer: a linha fica pixelada e o brilho em volta vira um pontilhado que cintila a cada 175 ms. |
 | Ignorar sons muito baixos | Portão de ruído: sons abaixo desse nível (um app esquecido tocando baixinho, um chiado) são ignorados, para as linhas e o icosaedro não tremerem parados. Aumente se ainda tremer em silêncio. |
 | Girar ao contrário | Equivalente visual do botão "reverso" do site. |
 | Movimento no silêncio | Rotação lenta mesmo sem som. |
